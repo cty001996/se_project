@@ -30,7 +30,7 @@ class RoomDetail(generic.DetailView):
 
 class RoomJoin(generic.CreateView):
     model = RoomMember
-    fields = ['nick_name']
+    fields = ['nickname']
     template_name = 'room/join_room.html'
 
     def form_valid(self, form):
@@ -42,7 +42,7 @@ class RoomJoin(generic.CreateView):
 
 def api_get_member_list(request, room_id):
     origin_member_list = RoomMember.objects.filter(room__id=room_id).order_by('access_level')
-    member_list = [{"nickname":member.nick_name,
+    member_list = [{"nickname":member.nickname,
                     "access_level":member.get_access_level_display()}
                    for member in origin_member_list]
     return JsonResponse(member_list, safe=False, json_dumps_params={'ensure_ascii':False})
