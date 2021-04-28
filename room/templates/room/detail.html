@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>room detail</title>
+    <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <script type="text/javascript" src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
+</head>
+<body>
+<h1> 房間標題 : {{ room.title }} </h1>
+<ul>
+  <li>介紹 : {{ room.introduction }}</li>
+  <li>類型 : {{ room.get_room_type_display }}</li>
+  <li>種類 : {{ room.get_room_category_display }}</li>
+</ul>
+
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" id="get_member_list_button">
+  查看成員列表
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">成員列表</h5>
+        
+      </div>
+      <div class="modal-body">
+          <ul id="member_list">
+
+          </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="close_member_list">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
+<input type="button" value="查看所有房間" onclick="location.href='{% url 'room:list'%}'">
+<script>
+$("#get_member_list_button").click(function(){
+  $.getJSON("{% url 'room:api_get_member_list' room.id %}",function(data,status){
+    for(var i=0;i<data.length;i++) {
+        $('#member_list').append('<li>'+data[i]["nickname"]+' / '+data[i]["access_level"]+'</li>');
+    }
+  });
+});
+
+$("#close_member_list").click(function(){
+    $('#member_list').empty();
+});
+
+</script>
+</body>
+</html>

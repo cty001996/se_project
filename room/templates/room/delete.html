@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Delete</title>
+</head>
+<body>
+<form method="post">{% csrf_token %}
+    <p>確定要刪除 "{{ object }}"?</p>
+    <input type="submit" value="確定">
+</form>
+</body>
+</html>

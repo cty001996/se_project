@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% if room_list %}
+    <ul>
+    {% for room in room_list %}
+        <li>
+            <a href="{% url 'room:detail' room.id %}">{{ room.title }}</a>
+            <input type="button" value="加入房間" onclick="location.href='{% url 'room:join_room' room.id %}'">
+            <input type="button" value="刪除" onclick="location.href='{% url 'room:delete' room.id %}'">
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>目前沒有任何房間</p>
+{% endif %}
+<input type="button" value="建立房間" onclick="location.href='{% url 'room:create'%}'">
+</body>
+</html>
