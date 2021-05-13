@@ -46,8 +46,14 @@ class RoomJoin(APIView):
             return Response({"error": "Room does not exist."}, status=status.HTTP_404_NOT_FOUND)
         if RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
             return Response({"error": "User is already in the room."}, status=status.HTTP_400_BAD_REQUEST)
+        if Room.objects.get(id=room_id).people_limit == len(RoomMember.objects.filter(room_id=room_id)):
+            return Response({"error": "Room is full."}, status=status.HTTP_400_BAD_REQUEST)
+        if Room.objects.get(id=room_id).room_type == 'private':
+            return Response({"error": "Room is private."}, status=status.HTTP_401_UNAUTHORIZED)
+
         serializer = RoomMemberSerializer(data=request.data)
         if serializer.is_valid():
+
             serializer.save(member=request.user, room=Room.objects.get(id=room_id))
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
