@@ -4,6 +4,7 @@ TYPE_CHOICES = [('public','公開房間'), ('private','私密房間'), ('course'
 CATEGORY_CHOICES = [('course', '課程討論'), ('find_group','尋求組隊')]
 ACCESS_CHOICES = [('admin', '房主'), ('manager', '管理員'), ('user', '一般成員')]
 
+
 class Room(models.Model):
     title = models.CharField(max_length=20)
     introduction = models.TextField(max_length=200, blank=True, default='')
@@ -22,8 +23,10 @@ class Room(models.Model):
     class Meta:
         ordering = ['create_time']
 
+
 class RoomMember(models.Model):
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, related_name='members', on_delete=models.CASCADE)
+    member = models.ForeignKey('auth.User', related_name='members', on_delete=models.CASCADE)
     nickname = models.CharField(max_length=20)
     access_level = models.CharField(choices=ACCESS_CHOICES, default='user', max_length=20)
 
