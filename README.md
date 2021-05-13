@@ -12,7 +12,7 @@
    ```
 3. 安裝必要套件
    ```python
-   pip3 install -r requirement
+   pip3 install -r requirements.txt
    ```
 4. run the server
    ```python
