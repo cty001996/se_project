@@ -55,7 +55,17 @@ class RoomInviting(models.Model):
         unique_together = ('room', 'invited',)
 
 
+class RoomInvitingRequest(models.Model):
+    room = models.ForeignKey(Room, related_name='invite_request_list', on_delete=models.CASCADE)
+    request_user = models.ForeignKey('auth.User', related_name='request_user_list', on_delete=models.CASCADE)
+    request_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('room', 'request_user',)
+
+
 class RoomRecord(models.Model):
     room = models.ForeignKey(Room, related_name='records', on_delete=models.CASCADE)
+    record_time = models.DateTimeField(auto_now_add=True)
     record = models.CharField(max_length=100)
 

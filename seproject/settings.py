@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'room.apps.RoomConfig'
+    'room.apps.RoomConfig',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -49,7 +50,20 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
+
+# https://pypi.org/project/django-cors-headers/
+# cookies will be allowed to be included in cross-site HTTP requests.
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = (
+    # TODO - set this properly for production
+    'http://localhost:8080',
+    'http://localhost:8000',
+)
 
 ROOT_URLCONF = 'seproject.urls'
 
