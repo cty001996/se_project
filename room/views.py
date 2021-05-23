@@ -29,9 +29,13 @@ class RoomList(APIView):
         serializer = RoomSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            # set user as admin in the room
+            # RoomMemberList = {user_id}
+            # RoomBlock = {}
+            # update RoomDetail as the user sets it
+            # update RoomRecord that this room is created
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    # would post() automatically update RoomDetail, RoomMemberList, RoomBlock?
 
 
 class RoomDetail(APIView):
@@ -44,15 +48,21 @@ class RoomDetail(APIView):
             raise Http404
 
     def get(self, request, pk):
-        # should return partial data, based on the room type
-        # public: all data, private: minimum data (for anyone), all data (for member) ...
+        if not room_exist(room_id):
+            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+        if Room.objects.get(id=room_id).room_type == 'private' and not members.filter(member=request.user).exists():
+            return error_response("You are not authorized in this private room.", status.HTTP_401_UNAUTHORIZED)
+        # Here we assume course and public rooms are welcomed to be seen
         room = self.get_object(pk)
         serializer = RoomSerializer(room)
         return Response(serializer.data)
 
     def put(self, request, pk):
-        # should return partial data, based on the room type
-        # public: all data, private: minimum data (for anyone), all data (for managers) ...
+        if not room_exist(room_id):
+            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+        member = RoomMember.objects.get(room_id=room_id, member=request.user)
+        if not member.access_level == 'admin' and not member.access_level == 'manager':
+            return error_response("You are not authorized to change settings.", status.HTTP_401_UNAUTHORIZED)
         room = self.get_object(pk)
         serializer = RoomSerializer(room, data=request.data)
         if serializer.is_valid():
@@ -61,8 +71,12 @@ class RoomDetail(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        # must be admin level to delete the room
-        # should first go to RoomList to delete?
+        if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
+            return error_response("Only admin is authorized to delete room.", status.HTTP_401_UNAUTHORIZED)
+        # delete RoomMemberList
+        # delete RoomBlockList
+        # delete Room
+        # update RoomRecord that this room is deleted
         room = self.get_object(pk)
         room.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -86,6 +100,7 @@ class RoomMemberList(APIView):
 class RoomJoin(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    # In the case of creating room, it is handled in post() in class RoomList()
     def post(self, request, room_id):
         if not Room.objects.filter(id=room_id).exists():
             return Response({"error": "Room does not exist."}, status=status.HTTP_404_NOT_FOUND)
@@ -117,9 +132,7 @@ class RoomLeave(APIView):
 
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         if member.access_level == 'admin':
-            return Response({"error": "User is admin, can't leave the room."}, status=status.HTTP_400_BAD_REQUEST)
-        # Should we remind the admin to either assign other admin, or to delete the room?
-        # can admin assign another manager / member as the admin? see the final few lines
+            return Response({"error": "User is the admin, can't leave the room."}, status=status.HTTP_400_BAD_REQUEST)
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -145,6 +158,10 @@ class RoomUserBlock(APIView):
 
         if member.access_level == 'user':
             return error_response("You don't have permission to do this action", status.HTTP_401_UNAUTHORIZED)
+        if not RoomMember.object.filter(room_id=room_id, member_id=user_id).exists():
+            return error_response("The target is not in the room", status.HTTP_400_BAD_REQUEST)
+        member = RoomMember.object.get(room_id=room_id, member_id=user_id)
+
         if member.access_level == 'admin' or member.access_level == 'manager':
             return error_response("You can't block the admin or manager", status.HTTP_401_UNAUTHORIZED)
         if user_id == request.user.id:
@@ -163,22 +180,6 @@ class RoomUserBlock(APIView):
                 member.delete()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    '''
-        def get(self, request, room_id):
-        if not room_exist(room_id):
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
-        if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists(): # if not member
-            return error_response("User doesn't have the permission to do this action.", status.HTTP_401_UNAUTHORIZED)
-        if not RoomMember.objects.filter(room_id=room_id, member=user_id).exists():
-            return error_response("Blocked_user is not in this room.", status.HTTP_400_BAD_REQUEST)
-        member = RoomMember.objects.get(room_id=room_id, member=user_id)
-
-        # Response the data
-       
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    '''
 
 
 class RoomUserUnBlock(APIView):
@@ -206,9 +207,8 @@ class RoomUserUnBlock(APIView):
 # in permission.py add isManager() for authorization needs?
 
 # class RoomRoles(): assign roles to other members (only admin is allowed to access operations:
-# assign admin: change another member to admin (the original admin will degrade to manager?)
-# assign manager: change another member to a manager
-# degrade manager: degrade a manager to a member
+#   assign manager: change another member to a manager
+#   degrade manager: degrade a manager to a member
 
 
 class RoomUserRemove(APIView):
@@ -249,7 +249,7 @@ class SetAccessLevel(APIView):
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
             return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
-            return error_response("Only admin can set access level", status.HTTP_400_BAD_REQUEST)
+            return error_response("Only admin can set access level", status.HTTP_401_UNAUTHORIZED)
 
         result = {}
         for key, value in request.data.items():
@@ -281,10 +281,10 @@ class TransferAdmin(APIView):
             return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
             return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
-        if not RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
-            return error_response("The user is not in the room", status.HTTP_400_BAD_REQUEST)
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
             return error_response("Only admin can transfer admin", status.HTTP_401_UNAUTHORIZED)
+        if not RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
+            return error_response("The user is not in the room", status.HTTP_400_BAD_REQUEST)
 
         origin_admin = RoomMember.objects.get(room_id=room_id, member=request.user)
         after_admin = RoomMember.objects.get(room_id=room_id, member_id=user_id)
