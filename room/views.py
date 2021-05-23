@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from room.models import Room, RoomMember, RoomBlock
-from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSerializer
+from room.models import Room, RoomMember, RoomBlock, RoomInviting
+from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSerializer, RoomInvitingSerializer
 
 
 def error_response(message, status_code):
@@ -41,43 +41,43 @@ class RoomList(APIView):
 class RoomDetail(APIView):
 
     # default handler
-    def get_object(self, pk):
+    def get_object(self, room_id):
         try:
-            return Room.objects.get(pk=pk)
+            return Room.objects.get(id=room_id)
         except Room.DoesNotExist:
             raise Http404
 
-    def get(self, request, pk):
+    def get(self, request, room_id):
         if not room_exist(room_id):
             return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
-        if Room.objects.get(id=room_id).room_type == 'private' and not members.filter(member=request.user).exists():
-            return error_response("You are not authorized in this private room.", status.HTTP_401_UNAUTHORIZED)
+        #if Room.objects.get(id=room_id).room_type == 'private' and not members.filter(member=request.user).exists():
+        #    return error_response("You are not authorized in this private room.", status.HTTP_401_UNAUTHORIZED)
         # Here we assume course and public rooms are welcomed to be seen
-        room = self.get_object(pk)
+        room = self.get_object(room_id)
         serializer = RoomSerializer(room)
         return Response(serializer.data)
 
-    def put(self, request, pk):
+    def put(self, request, room_id):
         if not room_exist(room_id):
             return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         if not member.access_level == 'admin' and not member.access_level == 'manager':
             return error_response("You are not authorized to change settings.", status.HTTP_401_UNAUTHORIZED)
-        room = self.get_object(pk)
+        room = self.get_object(room_id)
         serializer = RoomSerializer(room, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk):
+    def delete(self, request, room_id):
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
             return error_response("Only admin is authorized to delete room.", status.HTTP_401_UNAUTHORIZED)
         # delete RoomMemberList
         # delete RoomBlockList
         # delete Room
         # update RoomRecord that this room is deleted
-        room = self.get_object(pk)
+        room = self.get_object(room_id)
         room.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -295,3 +295,83 @@ class TransferAdmin(APIView):
 
         return Response(status=status.HTTP_200_OK)
 
+
+class InviteUser(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, room_id, user_id):
+        if not room_exist(room_id):
+            return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
+        if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
+            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+        if RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'user':
+            return error_response("Only admin and manager can invite user", status.HTTP_401_UNAUTHORIZED)
+        if RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
+            return error_response("The user is already in the room", status.HTTP_400_BAD_REQUEST)
+        if RoomBlock.objects.filter(room_id=room_id, blocked_user_id=user_id).exists():
+            return error_response("The user has been blocked", status.HTTP_400_BAD_REQUEST)
+        if RoomInviting.objects.filter(room_id=room_id, invited_id=user_id).exists():
+            return error_response("The user has been invited", status.HTTP_400_BAD_REQUEST)
+
+        serializer = RoomInvitingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(room=Room.objects.get(id=room_id),
+                            invited=User.objects.get(id=user_id),
+                            inviter=request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AcceptInviting(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, invite_id):
+        if not RoomInviting.objects.filter(id=invite_id, invited=request.user).exists():
+            return error_response("Invite id does not exist or does not belong to you", status.HTTP_400_BAD_REQUEST)
+        invite = RoomInviting.objects.get(id=invite_id, invited=request.user)
+        if not room_exist(invite.room_id):
+            return error_response("The room has been removed", status.HTTP_400_BAD_REQUEST)
+
+        data = request.data.copy()
+        data["access_level"] = 'user'
+        serializer = RoomMemberSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(member=request.user, room=Room.objects.get(id=invite.room_id))
+            invite.status = 'accept'
+            invite.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RejectInviting(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, invite_id):
+        if not RoomInviting.objects.filter(id=invite_id, invited=request.user).exists():
+            return error_response("Invite id does not exist or does not belong to you", status.HTTP_400_BAD_REQUEST)
+        invite = RoomInviting.objects.get(id=invite_id, invited=request.user)
+        invite.status = 'reject'
+        invite.save()
+        return Response(status=status.HTTP_200_OK)
+
+
+class InvitationList(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        invite_list = RoomInviting.objects.filter(invited=request.user)
+        serializer = RoomInvitingSerializer(invite_list, many=True)
+        return Response(serializer.data)
+
+
+class RoomInvitationList(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, room_id):
+        if not room_exist(room_id):
+            return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
+        if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
+            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+        invite_list = RoomInviting.objects.filter(room_id=room_id)
+        serializer = RoomInvitingSerializer(invite_list, many=True)
+        return Response(serializer.data)

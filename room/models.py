@@ -3,6 +3,7 @@ from django.shortcuts import reverse
 TYPE_CHOICES = [('public', '公開房間'), ('private', '私密房間'), ('course', '課程討論房間')]
 CATEGORY_CHOICES = [('course', '課程討論'), ('find_group', '尋求組隊')]
 ACCESS_CHOICES = [('admin', '房主'), ('manager', '管理員'), ('user', '一般成員')]
+INVITE_CHOICES = [('accept', 'accept'), ('reject', 'reject'), ('open', 'open')]
 
 
 class Room(models.Model):
@@ -50,6 +51,7 @@ class RoomInviting(models.Model):
     inviter = models.ForeignKey('auth.User', related_name='inviter_list', on_delete=models.CASCADE)
     invite_time = models.DateTimeField(auto_now_add=True)
     invited = models.ForeignKey('auth.User', related_name='invited_list', on_delete=models.CASCADE)
+    status = models.CharField(choices=INVITE_CHOICES, default='open', max_length=10)
 
     class Meta:
         unique_together = ('room', 'invited',)
@@ -59,6 +61,7 @@ class RoomInvitingRequest(models.Model):
     room = models.ForeignKey(Room, related_name='invite_request_list', on_delete=models.CASCADE)
     request_user = models.ForeignKey('auth.User', related_name='request_user_list', on_delete=models.CASCADE)
     request_time = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(choices=INVITE_CHOICES, default='open', max_length=10)
 
     class Meta:
         unique_together = ('room', 'request_user',)
