@@ -28,7 +28,7 @@ class Room(models.Model):
 class RoomMember(models.Model):
     room = models.ForeignKey(Room, related_name='members', on_delete=models.CASCADE)
     member = models.ForeignKey('auth.User', related_name='members', on_delete=models.CASCADE)
-    nickname = models.CharField(max_length=20, unique=True)
+    nickname = models.CharField(max_length=20)
     access_level = models.CharField(choices=ACCESS_CHOICES, default='user', max_length=20)
 
     class Meta:

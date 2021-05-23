@@ -26,16 +26,20 @@ class RoomList(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = RoomSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            # set user as admin in the room
-            # RoomMemberList = {user_id}
-            # RoomBlock = {}
-            # update RoomDetail as the user sets it
-            # update RoomRecord that this room is created
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        room_serializer = RoomSerializer(data=request.data)
+        data = request.data.copy()
+        data["access_level"] = "admin"
+        member_serializer = RoomMemberSerializer(data=data)
+        if room_serializer.is_valid():
+            if member_serializer.is_valid():
+                room_serializer.save()
+                member_serializer.save(member=request.user, room=Room.objects.get(id=room_serializer.instance.id))
+                # update RoomRecord that this room is created
+                return Response(room_serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(room_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RoomDetail(APIView):
@@ -105,7 +109,9 @@ class RoomJoin(APIView):
         if not Room.objects.filter(id=room_id).exists():
             return Response({"error": "Room does not exist."}, status=status.HTTP_404_NOT_FOUND)
         if RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return Response({"error": "User is already in the room."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You are already in the room."}, status=status.HTTP_400_BAD_REQUEST)
+        if RoomBlock.objects.filter(room_id=room_id, blocked_user=request.user).exists():
+            return error_response("You have been blocked by this room", status=status.HTTP_401_UNAUTHORIZED)
         if Room.objects.get(id=room_id).people_limit == len(RoomMember.objects.filter(room_id=room_id)):
             return Response({"error": "Room is full."}, status=status.HTTP_400_BAD_REQUEST)
         if Room.objects.get(id=room_id).room_type == 'private':
