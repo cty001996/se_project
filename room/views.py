@@ -21,11 +21,13 @@ class RoomList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        # give less information
         rooms = Room.objects.all()
         serializer = RoomSerializer(rooms, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        Room(title="123", create_time="now")
         room_serializer = RoomSerializer(data=request.data)
         data = request.data.copy()
         data["access_level"] = "admin"
@@ -44,7 +46,6 @@ class RoomList(APIView):
 
 class RoomDetail(APIView):
 
-    # default handler
     def get_object(self, room_id):
         try:
             return Room.objects.get(id=room_id)
@@ -52,6 +53,7 @@ class RoomDetail(APIView):
             raise Http404
 
     def get(self, request, room_id):
+        # give more detail
         if not room_exist(room_id):
             return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
         #if Room.objects.get(id=room_id).room_type == 'private' and not members.filter(member=request.user).exists():
@@ -77,10 +79,7 @@ class RoomDetail(APIView):
     def delete(self, request, room_id):
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
             return error_response("Only admin is authorized to delete room.", status.HTTP_401_UNAUTHORIZED)
-        # delete RoomMemberList
-        # delete RoomBlockList
-        # delete Room
-        # update RoomRecord that this room is deleted
+        # notify users that were in this room
         room = self.get_object(room_id)
         room.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -246,6 +245,7 @@ class UserRoom(APIView):
         serializer = RoomSerializer(rooms, many=True)
         return Response(serializer.data)
 
+
 class SetAccessLevel(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -257,7 +257,7 @@ class SetAccessLevel(APIView):
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
             return error_response("Only admin can set access level", status.HTTP_401_UNAUTHORIZED)
 
-        result = {}
+        result={}
         for key, value in request.data.items():
             if value == 'admin':
                 result[key] = "error: can't set admin by this api"
