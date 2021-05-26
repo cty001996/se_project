@@ -42,6 +42,7 @@ class RoomInvitingSerializer(serializers.ModelSerializer):
 
 class RoomRecordSerializer(serializers.ModelSerializer):
     room_id = serializers.ReadOnlyField(source='room.id')
+    member_id = serializers.ReadOnlyField(source='member.id')
 
     class Meta:
         model = RoomRecord
