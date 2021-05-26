@@ -4,6 +4,7 @@ TYPE_CHOICES = [('public', '公開房間'), ('private', '私密房間'), ('cours
 CATEGORY_CHOICES = [('course', '課程討論'), ('find_group', '尋求組隊')]
 ACCESS_CHOICES = [('admin', '房主'), ('manager', '管理員'), ('user', '一般成員')]
 INVITE_CHOICES = [('accept', 'accept'), ('reject', 'reject'), ('open', 'open')]
+RECORD_ACTIONS = [('join', '加入'), ('leave', '離開')]
 
 
 class Room(models.Model):
@@ -69,6 +70,8 @@ class RoomInvitingRequest(models.Model):
 
 class RoomRecord(models.Model):
     room = models.ForeignKey(Room, related_name='records', on_delete=models.CASCADE)
+    member = models.ForeignKey('auth.User', related_name='room_action', on_delete=models.CASCADE)
+    action = models.CharField(choices=RECORD_ACTIONS, default='join', max_length=20)
     record_time = models.DateTimeField(auto_now_add=True)
-    record = models.CharField(max_length=100)
+    #record = models.CharField(max_length=100)
 
