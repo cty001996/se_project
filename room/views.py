@@ -31,7 +31,7 @@ class RoomList(APIView):
         data = request.data.copy()
         data["access_level"] = "admin"
         member_serializer = RoomMemberSerializer(data=data)
-        record_serializer = RoomRecordSerializer(data=data)
+        record_serializer = RoomRecordSerializer(room=Room.objects.get(id=room_id), member=request_user)
 
         if not room_serializer.is_valid():
             return Response(room_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -42,7 +42,7 @@ class RoomList(APIView):
 
         room_serializer.save()
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_serializer.instance.id))
-        record_serializer.save(member=request.user, room=Room.objects.get(id=room_serializer.instance.id))
+        record_serializer.save(recording=f"{member.nickname} creates the room!")
         return Response(room_serializer.data, status=status.HTTP_201_CREATED)
 
 class RoomDetail(APIView):
@@ -122,8 +122,12 @@ class RoomJoin(APIView):
         member_serializer = RoomMemberSerializer(data=data)
         if not member_serializer.is_valid():
             return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        record_serializer = RoomRecordSerializer(room=Room.objects.get(id=room_id),member=request_user)
+        if not record_serializer.is_valid():
+            return Response(record_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_id))
+        record_serializer.save(recording=f"{member.nickname} joins the room!")
         return Response(member_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -139,9 +143,11 @@ class RoomLeave(APIView):
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         if member.access_level == 'admin':
             return Response({"error": "User is the admin, can't leave the room."}, status=status.HTTP_400_BAD_REQUEST)
+        record_serializer = RoomRecordSerializer(room=Room.objects.get(id=room_id),member=request_user)
+        if not record_serializer.is_valid():
+            return Response(record_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        record_serializer = RoomRecordSerializer(room=Room.objects.get(id=room_serializer.instance.id), member=request.user)
-        record_serializer.save(action='leave')
+        record_serializer.save(recording=f"{member.nickname} leaves the room!")
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -188,8 +194,17 @@ class RoomUserBlock(APIView):
         if RoomMember.objects.filter(room_id=room_id, member=user_id).exists():
             member = RoomMember.objects.get(room_id=room_id, member=user_id)
             member.delete()
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
+        # record block
+        # problem: blocked person may not be in the room!
+        '''
+        record_serializer = RoomRecordSerializer(room=Room.objects.get(id=room_id), member=user_id)
+        if not record_serializer.is_valid():
+            return Response(record_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        record_serializer.save(recording=f"{member.nickname} is blocked from the room!")
+        '''
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RoomUserUnBlock(APIView):
@@ -386,4 +401,4 @@ class RoomInvitationList(APIView):
         serializer = RoomInvitingSerializer(invite_list, many=True)
         return Response(serializer.data)
 
-# RoomRecord is in other functions?
+# RoomRecord is in other functions
