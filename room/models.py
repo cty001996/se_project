@@ -1,5 +1,7 @@
+from django.conf import settings
 from django.db import models
 from django.shortcuts import reverse
+
 TYPE_CHOICES = [('public', '公開房間'), ('private', '私密房間'), ('course', '課程討論房間')]
 CATEGORY_CHOICES = [('course', '課程討論'), ('find_group', '尋求組隊')]
 ACCESS_CHOICES = [('admin', '房主'), ('manager', '管理員'), ('user', '一般成員')]
@@ -28,7 +30,7 @@ class Room(models.Model):
 
 class RoomMember(models.Model):
     room = models.ForeignKey(Room, related_name='members', on_delete=models.CASCADE)
-    member = models.ForeignKey('auth.User', related_name='members', on_delete=models.CASCADE)
+    member = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='members', on_delete=models.CASCADE)
     nickname = models.CharField(max_length=20)
     access_level = models.CharField(choices=ACCESS_CHOICES, default='user', max_length=20)
 
@@ -38,10 +40,10 @@ class RoomMember(models.Model):
 
 class RoomBlock(models.Model):
     room = models.ForeignKey(Room, related_name='block_list', on_delete=models.CASCADE)
-    blocked_user = models.ForeignKey('auth.User', related_name='be_blocked_list', on_delete=models.CASCADE)
+    blocked_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='be_blocked_list', on_delete=models.CASCADE)
     block_time = models.DateTimeField(auto_now_add=True)
     reason = models.CharField(max_length=50)
-    block_manager = models.ForeignKey('auth.User', related_name='block_list', on_delete=models.CASCADE)
+    block_manager = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='block_list', on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ('room', 'blocked_user',)
@@ -49,9 +51,9 @@ class RoomBlock(models.Model):
 
 class RoomInviting(models.Model):
     room = models.ForeignKey(Room, related_name='invite_list', on_delete=models.CASCADE)
-    inviter = models.ForeignKey('auth.User', related_name='inviter_list', on_delete=models.CASCADE)
+    inviter = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='inviter_list', on_delete=models.CASCADE)
     invite_time = models.DateTimeField(auto_now_add=True)
-    invited = models.ForeignKey('auth.User', related_name='invited_list', on_delete=models.CASCADE)
+    invited = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='invited_list', on_delete=models.CASCADE)
     status = models.CharField(choices=INVITE_CHOICES, default='open', max_length=10)
 
     class Meta:
@@ -60,7 +62,7 @@ class RoomInviting(models.Model):
 
 class RoomInvitingRequest(models.Model):
     room = models.ForeignKey(Room, related_name='invite_request_list', on_delete=models.CASCADE)
-    request_user = models.ForeignKey('auth.User', related_name='request_user_list', on_delete=models.CASCADE)
+    request_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='request_user_list', on_delete=models.CASCADE)
     request_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(choices=INVITE_CHOICES, default='open', max_length=10)
 

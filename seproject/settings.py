@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'room.apps.RoomConfig',
+    'user',
     'corsheaders',
 ]
 
@@ -150,6 +151,8 @@ REST_FRAMEWORK = {
     )
 
 }
+
+AUTH_USER_MODEL = 'user.CustomUser'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=100000),
