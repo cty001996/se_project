@@ -71,7 +71,6 @@ class RoomInvitingRequest(models.Model):
 
 class RoomRecord(models.Model):
     room = models.ForeignKey(Room, related_name='records', on_delete=models.CASCADE)
-    member = models.ForeignKey('auth.User', related_name='room_action', on_delete=models.CASCADE)
     record_time = models.DateTimeField(auto_now_add=True)
     recording = models.CharField(max_length=100)
-    # record actions: create, join, leave, ... (block, unblock)
+    # record actions: create, join, leave, block, unblock, remove
