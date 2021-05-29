@@ -45,9 +45,9 @@ class RoomList(APIView):
 
 
 class RoomDetail(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, room_id):
-        # should give more details
         if not room_exist(room_id):
             return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
 
@@ -96,6 +96,19 @@ class RoomMemberList(APIView):
         return Response(serializer.data)
 
 
+class RoomMemberDetail(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, room_id, user_id):
+        if not room_exist(room_id):
+            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+        if not RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
+            return error_response("Member does not exist.", status.HTTP_404_NOT_FOUND)
+        member = RoomMember.objects.get(room_id=room_id, member_id=user_id)
+        serializer = RoomMemberSerializer(member)
+        return Response(serializer.data)
+
+
 class RoomJoin(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -120,7 +133,7 @@ class RoomJoin(APIView):
             return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_id))
-        RoomRecord(room_id=room_id, record=f"{data['nickname']}({request.user.username}) 加入了房間").save()
+        RoomRecord(room_id=room_id, recording=f"{data['nickname']}({request.user.username}) 加入了房間").save()
         return Response(member_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -164,7 +177,7 @@ class RoomUserBlock(APIView):
 
         if member.access_level == 'user':
             return error_response("You don't have permission to do this action", status.HTTP_401_UNAUTHORIZED)
-        if CustomUser.object.filter(id=user_id).exist():
+        if not CustomUser.object.filter(id=user_id).exist():
             return error_response("The target does not exist", status.HTTP_404_NOT_FOUND)
         target = CustomUser.objects.get(id=user_id)
         if user_id == request.user.id:
@@ -199,7 +212,7 @@ class RoomUserUnBlock(APIView):
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         if member.access_level == 'user':
             return error_response("You don't have permission to do this action", status.HTTP_401_UNAUTHORIZED)
-        if CustomUser.objects.filter(id=user_id).exists():
+        if not CustomUser.objects.filter(id=user_id).exists():
             return error_response("Target does not exist.", status.HTTP_404_NOT_FOUND)
         target = CustomUser.objects.get(id=user_id)
         if not RoomBlock.objects.filter(room_id=room_id, blocked_user=user_id).exists():
