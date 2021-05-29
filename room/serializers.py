@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    #members = serializers.PrimaryKeyRelatedField(many=True, queryset=RoomMember.objects.all())
 
     class Meta:
         model = Room
