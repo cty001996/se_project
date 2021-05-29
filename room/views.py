@@ -5,8 +5,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from room.models import Room, RoomMember, RoomBlock, RoomInviting
-from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSerializer, RoomInvitingSerializer
+from room.models import Room, RoomMember, RoomBlock, RoomInviting, RoomRecord
+from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSerializer, RoomInvitingSerializer, \
+    RoomRecordSerializer
+from user.models import CustomUser
 
 
 def error_response(message, status_code):
@@ -120,7 +122,8 @@ class RoomJoin(APIView):
         data["access_level"] = 'user'
         serializer = RoomMemberSerializer(data=data)
         if serializer.is_valid():
-
+            record = RoomRecord(room_id=room_id, record=f"{data['nickname']}({request.user.username}) 加入了房間")
+            record.save()
             serializer.save(member=request.user, room=Room.objects.get(id=room_id))
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -180,6 +183,8 @@ class RoomUserBlock(APIView):
             serializer.save(room=Room.objects.get(id=room_id),
                             blocked_user=User.objects.get(id=user_id),
                             block_manager=request.user)
+            record = RoomRecord(room_id=room_id, record=f"{request.user.nickname} 封鎖了 {CustomUser.objects.get(id=user_id).nickname}")
+            record.save()
             if RoomMember.objects.filter(room_id=room_id, member=user_id).exists():
                 member = RoomMember.objects.get(room_id=room_id, member=user_id)
                 member.delete()

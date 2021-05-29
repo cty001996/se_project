@@ -70,7 +70,7 @@ class UserDetail(APIView):
         user = self.get_object(user_id)
         if user != request.user:
             return Response({"error": "You can only edit yourself profile"}, status=status.HTTP_401_UNAUTHORIZED)
-        serializer = UserEditSerializer(user, data=request.data)
+        serializer = UserEditSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
