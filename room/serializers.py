@@ -44,7 +44,7 @@ class RoomRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomRecord
-        fields = '__all__'
+        fields = ('room_id', 'record_time', 'recording')
 
 
 class UserSerializer(serializers.ModelSerializer):

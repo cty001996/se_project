@@ -16,11 +16,19 @@ def room_exist(room_id):
     return Room.objects.filter(id=room_id).exists()
 
 
+class RoomRecordList(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, room_id):
+        records = RoomRecord.objects.filter(room_id=room_id)
+        serializer = RoomRecordSerializer(records, many=True)
+        return Response(serializer.data)
+
+
 class RoomList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # should filter some information
         rooms = Room.objects.all()
         serializer = RoomSerializer(rooms, many=True)
         return Response(serializer.data)
@@ -177,7 +185,7 @@ class RoomUserBlock(APIView):
 
         if member.access_level == 'user':
             return error_response("You don't have permission to do this action", status.HTTP_401_UNAUTHORIZED)
-        if not CustomUser.object.filter(id=user_id).exist():
+        if not CustomUser.objects.filter(id=user_id).exists():
             return error_response("The target does not exist", status.HTTP_404_NOT_FOUND)
         target = CustomUser.objects.get(id=user_id)
         if user_id == request.user.id:
@@ -195,7 +203,7 @@ class RoomUserBlock(APIView):
             RoomMember.objects.get(room_id=room_id, member=user_id).delete()
 
         # record block
-        RoomRecord(room=Room.object.get(id=room_id),
+        RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 封鎖了 {target.username}")
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -220,7 +228,7 @@ class RoomUserUnBlock(APIView):
         block = RoomBlock.objects.get(room_id=room_id, blocked_user=user_id)
         block.delete()
 
-        RoomRecord(room=Room.object.get(id=room_id),
+        RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 把 {target.username} 解封了").save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)

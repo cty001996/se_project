@@ -2,6 +2,7 @@ from django.urls import path
 from room import views
 
 urlpatterns = [
+    path('room_record/<int:room_id>/', views.RoomRecordList.as_view()),
     path('room/', views.RoomList.as_view()),
     path('room/<int:room_id>/', views.RoomDetail.as_view()),
     path('room/<int:room_id>/member_list', views.RoomMemberList.as_view()),
