@@ -334,6 +334,9 @@ class InviteUser(APIView):
             return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
         if RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'user':
             return error_response("Only admin and manager can invite user", status.HTTP_401_UNAUTHORIZED)
+        if not CustomUser.objects.filter(id=user_id).exists():
+            return error_response("Target does not exist.", status.HTTP_404_NOT_FOUND)
+        target = CustomUser.objects.get(id=user_id)
         if RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
             return error_response("The user is already in the room", status.HTTP_400_BAD_REQUEST)
         if RoomBlock.objects.filter(room_id=room_id, blocked_user_id=user_id).exists():
@@ -345,10 +348,9 @@ class InviteUser(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save(room=Room.objects.get(id=room_id),
-                        invited=CustomUser.objects.get(id=user_id),
+                        invited=target,
                         inviter=request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 class AcceptInviting(APIView):
@@ -368,10 +370,9 @@ class AcceptInviting(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save(member=request.user, room=Room.objects.get(id=invite.room_id))
-        RoomRecord(room_id=invite.room_id, recording=f"{data[nickname]}({request.user.username}) 被邀請進入了房間").save()
+        RoomRecord(room_id=invite.room_id, recording=f"{data['nickname']}({request.user.username}) 被邀請進入了房間").save()
         invite.delete()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 class RejectInviting(APIView):
@@ -382,7 +383,7 @@ class RejectInviting(APIView):
             return error_response("Invite id does not exist or does not belong to you", status.HTTP_400_BAD_REQUEST)
         invite = RoomInviting.objects.get(id=invite_id, invited=request.user)
         invite.delete()
-        RoomRecord(room_id=invite.room_id, recording=f"{data[nickname]}({request.user.username}) 拒絕了房間的邀請").save()
+        RoomRecord(room_id=invite.room_id, recording=f"{request.user.username} 拒絕了房間的邀請").save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

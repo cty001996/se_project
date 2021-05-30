@@ -36,7 +36,7 @@ class RoomInvitingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomInviting
-        fields = ['room_id', 'inviter_id', 'invited_id'] # no invite status
+        fields = ['id', 'room_id', 'inviter_id', 'invited_id'] # no invite status
 
 
 class RoomRecordSerializer(serializers.ModelSerializer):
