@@ -6,4 +6,5 @@ urlpatterns = [
     path('<int:user_id>/change_password/', views.ChangePasswordView.as_view()),
     path('', views.UserList.as_view()),
     path('<int:user_id>/', views.UserDetail.as_view()),
+    path('get_id/', views.GetUserID.as_view()),
 ]
