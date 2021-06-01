@@ -3,6 +3,8 @@ from room import views
 
 urlpatterns = [
     path('room_record/<int:room_id>/', views.RoomRecordList.as_view()),
+    path('room/type_list/', views.GetTypeChoices.as_view()),
+    path('room/category_list/', views.GetCategoryChoices.as_view()),
     path('room/', views.RoomList.as_view()),
     path('room/<int:room_id>/', views.RoomDetail.as_view()),
     path('room/<int:room_id>/member_list', views.RoomMemberList.as_view()),

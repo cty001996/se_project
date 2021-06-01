@@ -1,8 +1,10 @@
+from django.http import JsonResponse
 from rest_framework import status, mixins, generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import requests
 
-from room.models import Room, RoomMember, RoomBlock, RoomInviting, RoomRecord
+from room.models import Room, RoomMember, RoomBlock, RoomInviting, RoomRecord, TYPE_CHOICES, CATEGORY_CHOICES
 from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSerializer, RoomInvitingSerializer, \
     RoomRecordSerializer
 from user.models import CustomUser
@@ -25,6 +27,22 @@ class RoomRecordList(APIView):
         return Response(serializer.data)
 
 
+class GetTypeChoices(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        response = {key: value for key, value in TYPE_CHOICES}
+        return JsonResponse(response, safe=False)
+
+
+class GetCategoryChoices(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        response = {key: value for key, value in CATEGORY_CHOICES}
+        return JsonResponse(response, safe=False)
+
+
 class RoomList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -36,7 +54,10 @@ class RoomList(APIView):
     def post(self, request):
         room_serializer = RoomSerializer(data=request.data)
         data = request.data.copy()
-        data["access_level"] = "admin"
+        if data["room_type"] == 'course':
+            data["access_level"] = "manager"
+        else:
+            data["access_level"] = "admin"
         member_serializer = RoomMemberSerializer(data=data)
 
         if not room_serializer.is_valid():
@@ -46,6 +67,9 @@ class RoomList(APIView):
 
         room_serializer.save()
         member_serializer.save(member=request.user, room=room_serializer.instance)
+        if data["room_type"] == 'course':
+            RoomMember(room=room_serializer.instance, member=CustomUser.objects.get(username="admin"),
+                       nickname="admin", access_level="admin").save()
         member = member_serializer.instance
         RoomRecord(room=room_serializer.instance,
                    recording=f"{member.nickname}({member.member.username}) 建立了房間!").save()
@@ -142,6 +166,9 @@ class RoomJoin(APIView):
 
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_id))
         RoomRecord(room_id=room_id, recording=f"{data['nickname']}({request.user.username}) 加入了房間").save()
+        response = requests.post(f'http://127.0.0.1:8090/wsServer/notify/room/{room_id}/join/',
+                          {'join_userID': request.user.id})
+        print(response.status_code)
         return Response(member_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -157,7 +184,8 @@ class RoomLeave(APIView):
         if member.access_level == 'admin':
             return error_response("You are admin, can't leave the room.", status.HTTP_400_BAD_REQUEST)
 
-        RoomRecord(room=Room.objects.get(id=room_id), recording=f"{member.nickname}({member.member.username}) 離開了房間")
+        RoomRecord(room=Room.objects.get(id=room_id), recording=f"{member.nickname}({member.member.username}) 離開了房間")\
+            .save()
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -407,4 +435,5 @@ class RoomInvitationList(APIView):
         invite_list = RoomInviting.objects.filter(room_id=room_id)
         serializer = RoomInvitingSerializer(invite_list, many=True)
         return Response(serializer.data)
+
 
