@@ -1,6 +1,6 @@
 # se_project
 
-### 如何測試
+## 如何測試
 
 1. 首先建立一個虛擬環境
    ```python
@@ -19,7 +19,16 @@
    python3 manage.py runserver
    ```
 
-### Windows 版本步驟
+### Optional
+
+- 假如 DB 欄位有更動，可執行下方 command
+
+```python
+python3 manage.py makemigrations
+python3 manage.py migrate
+```
+
+## Windows 版本步驟
 
 1. 建立虛擬環境
    ```python
