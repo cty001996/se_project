@@ -18,7 +18,7 @@ urlpatterns = [
     path('user_room/', views.UserRoom.as_view()),
     path('room/<int:room_id>/set_access_level/', views.SetAccessLevel.as_view()),
     path('room/<int:room_id>/transfer_admin/<int:user_id>/', views.TransferAdmin.as_view()),
-    path('room/<int:room_id>/invite/<int:user_id>/', views.InviteUser.as_view()),
+    path('room/<int:room_id>/invite/<slug:username>/', views.InviteUser.as_view()),
     path('accept_invite/<int:invite_id>/', views.AcceptInviting.as_view()),
     path('reject_invite/<int:invite_id>/', views.RejectInviting.as_view()),
     path('invitation/', views.InvitationList.as_view()),
