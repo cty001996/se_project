@@ -1,41 +1,26 @@
-from django.conf import settings
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
-from django.db import models
-from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
+from django.urls import path
+from room import views
 
-from .managers import CustomUserManager
-
-NOTIFICATION_STATUS = [('unread', '未讀'), ('read', '已讀')]
-
-
-class CustomUser(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(_('email address'), unique=True)
-    username = models.CharField(max_length=20)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
-    nickname = models.CharField(max_length=20)
-    department = models.CharField(max_length=30)
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
-
-    objects = CustomUserManager()
-
-    def __str__(self):
-        return self.username
-
-    def save(self, *args, **kwargs):
-        self.username = self.email.split("@")[0]
-        super().save(*args, **kwargs)
-
-
-class Notification(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', on_delete=models.CASCADE)
-    message = models.CharField(max_length=100)
-    status = models.CharField(choices=NOTIFICATION_STATUS, default='unread', max_length=10)
-    created_time = models.DateTimeField(auto_now_add=True)
-
+urlpatterns = [
+    path('room_record/<int:room_id>/', views.RoomRecordList.as_view()),
+    path('room/type_list/', views.GetTypeChoices.as_view()),
+    path('room/category_list/', views.GetCategoryChoices.as_view()),
+    path('room/', views.RoomList.as_view()),
+    path('room/<int:room_id>/', views.RoomDetail.as_view()),
+    path('room/<int:room_id>/member_list', views.RoomMemberList.as_view()),
+    path('room/<int:room_id>/member/<int:user_id>/', views.RoomMemberDetail.as_view()),
+    path('room/<int:room_id>/join_room/', views.RoomJoin.as_view()),
+    path('room/<int:room_id>/leave_room/', views.RoomLeave.as_view()),
+    path('room/<int:room_id>/block_list/', views.RoomBlockList.as_view()),
+    path('room/<int:room_id>/block/<int:user_id>/', views.RoomUserBlock.as_view()),
+    path('room/<int:room_id>/unblock/<int:user_id>/', views.RoomUserUnBlock.as_view()),
+    path('room/<int:room_id>/remove/<int:user_id>/', views.RoomUserRemove.as_view()),
+    path('user_room/', views.UserRoom.as_view()),
+    path('room/<int:room_id>/set_access_level/', views.SetAccessLevel.as_view()),
+    path('room/<int:room_id>/transfer_admin/<int:user_id>/', views.TransferAdmin.as_view()),
+    path('room/<int:room_id>/invite/<slug:username>/', views.InviteUser.as_view()),
+    path('accept_invite/<int:invite_id>/', views.AcceptInviting.as_view()),
+    path('reject_invite/<int:invite_id>/', views.RejectInviting.as_view()),
+    path('invitation/', views.InvitationList.as_view()),
+    path('room/<int:room_id>/invitation/', views.RoomInvitationList.as_view()),
+]
