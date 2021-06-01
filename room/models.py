@@ -74,3 +74,11 @@ class RoomRecord(models.Model):
     record_time = models.DateTimeField(auto_now_add=True)
     recording = models.CharField(max_length=100)
     # record actions: create, join, leave, block, unblock, remove
+
+
+class RoomMessage(models.Model):
+    room = models.ForeignKey(Room, related_name='messages', on_delete=models.CASCADE)
+    member = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    message = models.TextField(max_length=500)
+    recv_time = models.DateTimeField(auto_now_add=True)
+
