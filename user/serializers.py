@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from user.models import CustomUser
+from user.models import CustomUser, Notification
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -50,3 +50,9 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         instance.set_password(validated_data['password'])
         instance.save()
         return instance
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'

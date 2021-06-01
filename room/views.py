@@ -7,7 +7,7 @@ import requests
 from room.models import Room, RoomMember, RoomBlock, RoomInviting, RoomRecord, TYPE_CHOICES, CATEGORY_CHOICES
 from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSerializer, RoomInvitingSerializer, \
     RoomRecordSerializer
-from user.models import CustomUser
+from user.models import CustomUser, Notification
 
 
 def error_response(message, status_code):
@@ -54,12 +54,16 @@ class RoomList(APIView):
     def post(self, request):
         room_serializer = RoomSerializer(data=request.data)
         data = request.data.copy()
-        if data["room_type"] == 'course':
+        owner = request.user
+        if data.get("room_type", None) == 'course':
             data["access_level"] = "manager"
+            owner = CustomUser.objects.get(username="admin")
         else:
             data["access_level"] = "admin"
         member_serializer = RoomMemberSerializer(data=data)
 
+        if len(RoomMember.objects.filter(member=owner, access_level="admin")) >= 50:
+            return error_response("room create limit has reached!", status.HTTP_400_BAD_REQUEST)
         if not room_serializer.is_valid():
             return Response(room_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         if not member_serializer.is_valid():
@@ -67,8 +71,8 @@ class RoomList(APIView):
 
         room_serializer.save()
         member_serializer.save(member=request.user, room=room_serializer.instance)
-        if data["room_type"] == 'course':
-            RoomMember(room=room_serializer.instance, member=CustomUser.objects.get(username="admin"),
+        if data.get("room_type", None) == 'course':
+            RoomMember(room=room_serializer.instance, member=owner,
                        nickname="admin", access_level="admin").save()
         member = member_serializer.instance
         RoomRecord(room=room_serializer.instance,
@@ -230,9 +234,12 @@ class RoomUserBlock(APIView):
         if RoomMember.objects.filter(room_id=room_id, member=user_id).exists():
             RoomMember.objects.get(room_id=room_id, member=user_id).delete()
 
-        # record block
+        # record block and notify
         RoomRecord(room=Room.objects.get(id=room_id),
-                   recording=f"{member.nickname}({member.member.username}) 封鎖了 {target.username}")
+                   recording=f"{member.nickname}({member.member.username}) 封鎖了 {target.username}").save()
+        Notification(user=target,
+                     message=f"你被 {member.member.username} 禁止進入了房間「{Room.objects.get(id=room_id).title}」，" +
+                             f"原因為:{request.data.get('reason', None)}").save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

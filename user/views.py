@@ -3,8 +3,8 @@ from rest_framework import status, generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import CustomUser
-from .serializers import ChangePasswordSerializer, UserEditSerializer, UserCreateSerializer
+from .models import CustomUser, Notification
+from .serializers import ChangePasswordSerializer, UserEditSerializer, UserCreateSerializer, NotificationSerializer
 from rest_framework.permissions import AllowAny
 
 
@@ -82,6 +82,28 @@ class GetUserID(APIView):
 
     def get(self, request):
         return Response({"id": request.user.id})
+
+
+class NotificationList(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = NotificationSerializer(request.user.notifications, many=True)
+        return Response(serializer.data)
+
+
+class NotificationDetail(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, notify_id):
+        if not Notification.objects.filter(id=notify_id, user=request.user).exists():
+            return Response({"error": "notification id does not exist or it does not belong to you"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        removal = Notification.objects.get(id=notify_id, user=request.user)
+        removal.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 

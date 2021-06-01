@@ -1,8 +1,14 @@
 asgiref==3.3.4
+certifi==2021.5.30
+chardet==3.0.4
 Django==3.2.2
+django-cors-headers==3.7.0
 djangorestframework==3.12.4
 djangorestframework-simplejwt==4.6.0
+idna==2.5
 PyJWT==2.1.0
+PyMySQL==1.0.2
 pytz==2021.1
+requests2==2.16.0
 sqlparse==0.4.1
-django-cors-headers==3.7.0
+urllib3==1.21.1
