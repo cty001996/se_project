@@ -362,7 +362,10 @@ class TransferAdmin(APIView):
 class InviteUser(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, room_id, user_id):
+    def post(self, request, room_id, username):
+        if not CustomUser.objects.filter(username=username).exists():
+            return error_response("Target user does not exist.", status.HTTP_400_BAD_REQUEST)
+        user_id = CustomUser.objects.get(id=invite.room_id).id
         if not room_exist(room_id):
             return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
