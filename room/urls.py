@@ -7,7 +7,7 @@ urlpatterns = [
     path('room/category_list/', views.GetCategoryChoices.as_view()),
     path('room/', views.RoomList.as_view()),
     path('room/<int:room_id>/', views.RoomDetail.as_view()),
-    path('room/<int:room_id>/member_list', views.RoomMemberList.as_view()),
+    path('room/<int:room_id>/member_list/', views.RoomMemberList.as_view()),
     path('room/<int:room_id>/member/<int:user_id>/', views.RoomMemberDetail.as_view()),
     path('room/<int:room_id>/join_room/', views.RoomJoin.as_view()),
     path('room/<int:room_id>/leave_room/', views.RoomLeave.as_view()),
