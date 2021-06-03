@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.urls import reverse
 from rest_framework import status, generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -6,6 +7,34 @@ from rest_framework.views import APIView
 from .models import CustomUser, Notification
 from .serializers import ChangePasswordSerializer, UserEditSerializer, UserCreateSerializer, NotificationSerializer
 from rest_framework.permissions import AllowAny
+
+from django.core.mail import EmailMessage
+
+from django.utils.encoding import force_bytes, force_text, DjangoUnicodeDecodeError
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.contrib.sites.shortcuts import get_current_site
+from .utils import token_generator
+
+from .permissions import IsVerify
+
+
+def send_verify_mail(request, user):
+    uidb64 = urlsafe_base64_encode(force_bytes(user.id))
+    domain = get_current_site(request).domain
+    token = token_generator.make_token(user)
+    user.is_verify = False
+    user.save()
+    link = reverse('email_verify', kwargs={'uidb64': uidb64, 'token': token})
+    url = 'http://' + domain + link
+    email_subject = '[Online Group] 驗證信'
+    email_body = f'{user.username}你好，以下是驗證連結 {url}'
+    email = EmailMessage(
+        email_subject,
+        email_body,
+        'noreply@ntu.edu.tw',
+        [user.email],
+    )
+    email.send()
 
 
 class Register(APIView):
@@ -16,6 +45,7 @@ class Register(APIView):
         if serializer.is_valid():
             user = serializer.save()
             if user:
+                send_verify_mail(request, user)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -44,7 +74,7 @@ class ChangePasswordView(APIView):
 
 
 class UserList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request):
         users = CustomUser.objects.all()
@@ -68,11 +98,14 @@ class UserDetail(APIView):
 
     def put(self, request, user_id):
         user = self.get_object(user_id)
+        origin_mail = user.email
         if user != request.user:
             return Response({"error": "You can only edit yourself profile"}, status=status.HTTP_401_UNAUTHORIZED)
         serializer = UserEditSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+            if origin_mail != user.email:
+                send_verify_mail(request, user)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -103,6 +136,34 @@ class NotificationDetail(APIView):
         removal = Notification.objects.get(id=notify_id, user=request.user)
         removal.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmailVerification(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_text(urlsafe_base64_decode(uidb64))
+            user = CustomUser.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+            user = None
+
+        if user is not None and token_generator.check_token(user, token):
+            user.is_verify = True
+            user.save()
+            return Response("success")
+        else:
+            # invalid link
+            return Response("failed", status=status.HTTP_400_BAD_REQUEST)
+
+
+class SendVerifyMail(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        send_verify_mail(request, request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 

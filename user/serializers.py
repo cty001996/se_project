@@ -7,7 +7,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('id', 'email', 'password', 'password2', 'last_name', 'first_name', 'department', 'nickname')
+        fields = ('id', 'email', 'password', 'password2', 'last_name', 'first_name',
+                  'department', 'nickname', 'is_verify')
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
@@ -21,6 +22,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 instance.set_password(password)
             else:
                 raise serializers.ValidationError({"password": "Password fields didn't match."})
+
+        instance.is_verify = False
         instance.save()
         return instance
 
@@ -29,7 +32,13 @@ class UserEditSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('last_name', 'first_name', 'department', 'email', 'nickname')
+        fields = ('last_name', 'first_name', 'department', 'email', 'nickname', 'is_verify')
+        read_only_fields = ['is_verify']
+
+    def validate_email(self, value):
+        if value.split("@")[1] != "ntu.edu.tw":
+            raise serializers.ValidationError({"email": "Must be NTU mail"})
+        return value
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
