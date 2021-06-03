@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import CustomUser, Notification
-from .serializers import ChangePasswordSerializer, UserEditSerializer, UserCreateSerializer, NotificationSerializer
+from .serializers import ChangePasswordSerializer, UserEditSerializer, UserCreateSerializer, NotificationSerializer, \
+    NotifyEditSerializer
 from rest_framework.permissions import AllowAny
 
 from django.core.mail import EmailMessage
@@ -137,8 +138,6 @@ class NotificationDetail(APIView):
         removal.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-<<<<<<< HEAD
 class EmailVerification(APIView):
     permission_classes = [AllowAny]
 
@@ -165,8 +164,6 @@ class SendVerifyMail(APIView):
         send_verify_mail(request, request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-=======
 class ReadNotification(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -179,10 +176,9 @@ class ReadNotification(APIView):
             return Response({"error": "notification has been read."}, status=status.HTTP_400_BAD_REQUEST)
         notify_serializer = NotifyEditSerializer(notice, many=True)
         if not notify_serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(notify_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         notify_serializer.save(status='read')
         return Response(notify_serializer.data)
->>>>>>> 5aafb9c60dc657ce2e56426d996eb991f2a572a8
 
 
 
