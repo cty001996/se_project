@@ -9,6 +9,7 @@ urlpatterns = [
     path('get_id/', views.GetUserID.as_view()),
     path('notification/', views.NotificationList.as_view()),
     path('notification/<int:notify_id>/', views.NotificationDetail.as_view()),
+    path('read_notification/<int:notify_id>/', views.ReadNotification.as_view()),
     path('verify_email/<slug:uidb64>/<slug:token>/', views.EmailVerification.as_view(), name='email_verify'),
     path('send_verify_mail/', views.SendVerifyMail.as_view()),
 ]

@@ -138,6 +138,7 @@ class NotificationDetail(APIView):
         removal.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class EmailVerification(APIView):
     permission_classes = [AllowAny]
 
@@ -164,6 +165,7 @@ class SendVerifyMail(APIView):
         send_verify_mail(request, request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class ReadNotification(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -179,6 +181,3 @@ class ReadNotification(APIView):
             return Response(notify_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         notify_serializer.save(status='read')
         return Response(notify_serializer.data)
-
-
-
