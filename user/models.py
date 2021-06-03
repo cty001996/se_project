@@ -6,6 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 from .managers import CustomUserManager
 
+NOTIFICATION_STATUS = [('unread', '未讀'), ('read', '已讀')]
+
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
@@ -35,5 +37,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 class Notification(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', on_delete=models.CASCADE)
     message = models.CharField(max_length=100)
+    status = models.CharField(choices=NOTIFICATION_STATUS, default='unread', max_length=10)
     created_time = models.DateTimeField(auto_now_add=True)
 

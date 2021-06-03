@@ -138,6 +138,7 @@ class NotificationDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+<<<<<<< HEAD
 class EmailVerification(APIView):
     permission_classes = [AllowAny]
 
@@ -165,6 +166,23 @@ class SendVerifyMail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+=======
+class ReadNotification(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, notify_id):
+        if not Notification.objects.filter(id=notify_id, user=request.user).exists():
+            return Response({"error": "notification id does not exist or it does not belong to you"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        notice = Notification.objects.get(id=notify_id, user=request.user)
+        if notice.status == 'read':
+            return Response({"error": "notification has been read."}, status=status.HTTP_400_BAD_REQUEST)
+        notify_serializer = NotifyEditSerializer(notice, many=True)
+        if not notify_serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        notify_serializer.save(status='read')
+        return Response(notify_serializer.data)
+>>>>>>> 5aafb9c60dc657ce2e56426d996eb991f2a572a8
 
 
 
