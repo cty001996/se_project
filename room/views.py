@@ -44,8 +44,6 @@ class GetCategoryChoices(APIView):
         response = {key: value for key, value in CATEGORY_CHOICES}
         return JsonResponse(response, safe=False)
 
-
-# !!!! Using error message to restrict one authorization for now
 class RoomList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
