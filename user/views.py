@@ -52,7 +52,7 @@ class Register(APIView):
 
 
 class ChangePasswordView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get_object(self, user_id):
         try:
@@ -84,7 +84,7 @@ class UserList(APIView):
 
 
 class UserDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get_object(self, user_id):
         try:
@@ -112,14 +112,14 @@ class UserDetail(APIView):
 
 
 class GetUserID(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request):
         return Response({"id": request.user.id})
 
 
 class NotificationList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request):
         serializer = NotificationSerializer(request.user.notifications, many=True)
@@ -127,7 +127,7 @@ class NotificationList(APIView):
 
 
 class NotificationDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def delete(self, request, notify_id):
         if not Notification.objects.filter(id=notify_id, user=request.user).exists():
@@ -167,7 +167,7 @@ class SendVerifyMail(APIView):
 
 
 class ReadNotification(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def put(self, request, notify_id):
         if not Notification.objects.filter(id=notify_id, user=request.user).exists():
