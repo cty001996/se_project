@@ -12,7 +12,6 @@ from user.models import CustomUser, Notification
 from user.permissions import IsVerify
 
 
-
 def error_response(message, status_code):
     return Response({"error": message}, status=status_code)
 

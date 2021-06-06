@@ -35,11 +35,12 @@ class RoomInvitingSerializer(serializers.ModelSerializer):
     room_id = serializers.ReadOnlyField(source='room.id')
     inviter_id = serializers.ReadOnlyField(source='inviter.id')
     invited_id = serializers.ReadOnlyField(source='invited.id')
-    username = serializers.ReadOnlyField(source='member.username')
+    inviter_username = serializers.ReadOnlyField(source='inviter.username')
+    invited_username = serializers.ReadOnlyField(source='invitee.username')
 
     class Meta:
         model = RoomInviting
-        fields = ['id', 'room_id', 'inviter_id', 'invited_id', 'username'] # no invite status
+        fields = ['id', 'room_id', 'inviter_id', 'invited_id', 'inviter_username', 'invited_username'] # no invite status
 
 
 class RoomRecordSerializer(serializers.ModelSerializer):
