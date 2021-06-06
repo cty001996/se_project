@@ -36,7 +36,7 @@ class RoomInvitingSerializer(serializers.ModelSerializer):
     inviter_id = serializers.ReadOnlyField(source='inviter.id')
     invited_id = serializers.ReadOnlyField(source='invited.id')
     inviter_username = serializers.ReadOnlyField(source='inviter.username')
-    invited_username = serializers.ReadOnlyField(source='invitee.username')
+    invited_username = serializers.ReadOnlyField(source='invited.username')
 
     class Meta:
         model = RoomInviting
