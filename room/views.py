@@ -45,6 +45,7 @@ class GetCategoryChoices(APIView):
         response = {key: value for key, value in CATEGORY_CHOICES}
         return JsonResponse(response, safe=False)
 
+
 class RoomList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -172,9 +173,9 @@ class RoomJoin(APIView):
 
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_id))
         RoomRecord(room_id=room_id, recording=f"{data['nickname']}({request.user.username}) 加入了房間").save()
-        response = requests.post(f'http://127.0.0.1:8090/wsServer/notify/room/{room_id}/join/',
-                          {'join_userID': request.user.id})
-        print(response.status_code)
+        #response = requests.post(f'http://127.0.0.1:8090/wsServer/notify/room/{room_id}/join/',
+        #                  {'join_userID': request.user.id})
+        #print(response.status_code)
         return Response(member_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -267,7 +268,8 @@ class RoomUserUnBlock(APIView):
 
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 把 {target.username} 解封了").save()
-
+        Notification(user=target,
+                     message=f"{member.member.username} 將你從房間「{Room.objects.get(id=room_id).title}」解封了").save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 # in permission.py add isManager() for authorization needs?
@@ -292,6 +294,8 @@ class RoomUserRemove(APIView):
 
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 踢掉了 {removal.nickname}({removal.member.username})").save()
+        Notification(user=removal,
+                     message=f"你被 {member.member.username} 踢出了了房間「{Room.objects.get(id=room_id).title}」").save()
         removal.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -358,6 +362,8 @@ class TransferAdmin(APIView):
         after_admin.access_level = "admin"
         after_admin.save()
 
+        # TODO: room record and notification
+
         return Response(status=status.HTTP_200_OK)
 
 
@@ -390,6 +396,9 @@ class InviteUser(APIView):
         serializer.save(room=Room.objects.get(id=room_id),
                         invited=target,
                         inviter=request.user)
+
+        # TODO: room record and notification
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -412,6 +421,7 @@ class AcceptInviting(APIView):
         serializer.save(member=request.user, room=Room.objects.get(id=invite.room_id))
         RoomRecord(room_id=invite.room_id, recording=f"{data['nickname']}({request.user.username}) 被邀請進入了房間").save()
         invite.delete()
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
