@@ -293,7 +293,7 @@ class RoomUserRemove(APIView):
 
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 踢掉了 {removal.nickname}({removal.member.username})").save()
-        Notification(user=removal,
+        Notification(user=removal.member,
                      message=f"你被 {member.member.username} 踢出了了房間「{Room.objects.get(id=room_id).title}」").save()
         removal.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
