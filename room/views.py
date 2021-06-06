@@ -9,6 +9,8 @@ from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSeri
     RoomRecordSerializer
 from user.models import CustomUser, Notification
 
+from user.permissions import IsVerify
+
 
 
 def error_response(message, status_code):
@@ -20,7 +22,7 @@ def room_exist(room_id):
 
 
 class RoomRecordList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request, room_id):
         records = RoomRecord.objects.filter(room_id=room_id)
@@ -43,7 +45,6 @@ class GetCategoryChoices(APIView):
         response = {key: value for key, value in CATEGORY_CHOICES}
         return JsonResponse(response, safe=False)
 
-
 class RoomList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -53,14 +54,13 @@ class RoomList(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+
+        if not request.user.is_verify:
+            return error_response("You do not have the right to create a room", status.HTTP_401_UNAUTHORIZED)
         room_serializer = RoomSerializer(data=request.data)
         data = request.data.copy()
         owner = request.user
-        if data.get("room_type", None) == 'course':
-            data["access_level"] = "manager"
-            owner = CustomUser.objects.get(username="admin")
-        else:
-            data["access_level"] = "admin"
+        data["access_level"] = "admin"
         member_serializer = RoomMemberSerializer(data=data)
 
         if len(RoomMember.objects.filter(member=owner, access_level="admin")) >= 50:
@@ -72,9 +72,7 @@ class RoomList(APIView):
 
         room_serializer.save()
         member_serializer.save(member=request.user, room=room_serializer.instance)
-        if data.get("room_type", None) == 'course':
-            RoomMember(room=room_serializer.instance, member=owner,
-                       nickname="admin", access_level="admin").save()
+
         member = member_serializer.instance
         RoomRecord(room=room_serializer.instance,
                    recording=f"{member.nickname}({member.member.username}) 建立了房間!").save()
@@ -82,7 +80,7 @@ class RoomList(APIView):
 
 
 class RoomDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request, room_id):
         if not room_exist(room_id):
@@ -116,14 +114,17 @@ class RoomDetail(APIView):
             return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
             return error_response("Only admin is authorized to delete room.", status.HTTP_401_UNAUTHORIZED)
+        if Room.objects.get(id=room_id).room_type == 'course':
+            return error_response("Course rooms cannot be deleted.", status.HTTP_400_BAD_REQUEST)
         # notify users that were in this room
         room = Room.objects.get(id=room_id)
         room.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# What's the difference between the 2 following API?
 class RoomMemberList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request, room_id):
         if not Room.objects.filter(id=room_id).exists():
@@ -134,7 +135,7 @@ class RoomMemberList(APIView):
 
 
 class RoomMemberDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request, room_id, user_id):
         if not room_exist(room_id):
@@ -147,7 +148,7 @@ class RoomMemberDetail(APIView):
 
 
 class RoomJoin(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     # In the case of creating room, it is handled in post() in class RoomList()
     def post(self, request, room_id):
@@ -178,7 +179,7 @@ class RoomJoin(APIView):
 
 
 class RoomLeave(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def delete(self, request, room_id):
         if not Room.objects.filter(id=room_id).exists():
@@ -207,7 +208,7 @@ class RoomBlockList(APIView):
 
 
 class RoomUserBlock(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def post(self, request, room_id, user_id):
         if not room_exist(room_id):
@@ -246,7 +247,7 @@ class RoomUserBlock(APIView):
 
 
 class RoomUserUnBlock(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def delete(self, request, room_id, user_id):
         if not room_exist(room_id):
@@ -273,7 +274,7 @@ class RoomUserUnBlock(APIView):
 
 
 class RoomUserRemove(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def delete(self, request, room_id, user_id):
         if not room_exist(room_id):
@@ -296,7 +297,7 @@ class RoomUserRemove(APIView):
 
 
 class UserRoom(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request):
         rooms = Room.objects.filter(members__member=request.user)
@@ -305,7 +306,7 @@ class UserRoom(APIView):
 
 
 class SetAccessLevel(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def put(self, request, room_id):
         if not room_exist(room_id):
@@ -338,7 +339,7 @@ class SetAccessLevel(APIView):
 
 
 class TransferAdmin(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def put(self, request, room_id, user_id):
         if not room_exist(room_id):
@@ -361,7 +362,7 @@ class TransferAdmin(APIView):
 
 
 class InviteUser(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def post(self, request, room_id, username):
         if not CustomUser.objects.filter(username=username).exists():
@@ -393,7 +394,7 @@ class InviteUser(APIView):
 
 
 class AcceptInviting(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def post(self, request, invite_id):
         if not RoomInviting.objects.filter(id=invite_id, invited=request.user).exists():
@@ -415,7 +416,7 @@ class AcceptInviting(APIView):
 
 
 class RejectInviting(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def delete(self, request, invite_id):
         if not RoomInviting.objects.filter(id=invite_id, invited=request.user).exists():
@@ -427,7 +428,7 @@ class RejectInviting(APIView):
 
 
 class InvitationList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request):
         invite_list = RoomInviting.objects.filter(invited=request.user)
@@ -436,7 +437,7 @@ class InvitationList(APIView):
 
 
 class RoomInvitationList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerify]
 
     def get(self, request, room_id):
         if not room_exist(room_id):
