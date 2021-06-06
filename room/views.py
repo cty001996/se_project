@@ -457,5 +457,3 @@ class RoomInvitationList(APIView):
         invite_list = RoomInviting.objects.filter(room_id=room_id)
         serializer = RoomInvitingSerializer(invite_list, many=True)
         return Response(serializer.data)
-
-
