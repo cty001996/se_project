@@ -300,7 +300,7 @@ class RoomUserRemove(APIView):
 
 
 class UserRoom(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsVerify]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         rooms = Room.objects.filter(members__member=request.user)
