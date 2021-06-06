@@ -38,6 +38,23 @@ def send_verify_mail(request, user):
     email.send()
 
 
+def send_reset_mail(request, user):
+    uidb64 = urlsafe_base64_encode(force_bytes(user.id))
+    domain = get_current_site(request).domain
+    token = token_generator.make_token(user)
+    link = reverse('password_reset', kwargs={'uidb64': uidb64, 'token': token})
+    url = 'http://' + domain + link
+    email_subject = '[Online Group] 重設密碼'
+    email_body = f'{user.username}你好，以下是重設密碼連結 {url}'
+    email = EmailMessage(
+        email_subject,
+        email_body,
+        'noreply@ntu.edu.tw',
+        [user.email],
+    )
+    email.send()
+
+
 class Register(APIView):
     permission_classes = [AllowAny]
 
@@ -156,6 +173,36 @@ class EmailVerification(APIView):
         else:
             # invalid link
             return Response("failed", status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordReset(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token):
+        try:
+            uid = force_text(urlsafe_base64_decode(uidb64))
+            user = CustomUser.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+            user = None
+
+        if user is not None and token_generator.check_token(user, token):
+            if not "password" in request.data:
+                return Response({"error": "must contain password field"}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(request.data["password"])
+            return Response("success")
+        return Response("error", status=status.HTTP_400_BAD_REQUEST)
+
+
+class ForgetPassword(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email', None)
+        if not CustomUser.objects.filter(email=email).exists():
+            return Response({"error": "The email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+        user = CustomUser.objects.get(email=email)
+        send_reset_mail(request, user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SendVerifyMail(APIView):

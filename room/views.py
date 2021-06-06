@@ -10,6 +10,7 @@ from room.serializers import RoomSerializer, RoomMemberSerializer, RoomBlockSeri
 from user.models import CustomUser, Notification
 
 
+
 def error_response(message, status_code):
     return Response({"error": message}, status=status_code)
 

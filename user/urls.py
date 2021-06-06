@@ -11,5 +11,7 @@ urlpatterns = [
     path('notification/<int:notify_id>/', views.NotificationDetail.as_view()),
     path('read_notification/<int:notify_id>/', views.ReadNotification.as_view()),
     path('verify_email/<slug:uidb64>/<slug:token>/', views.EmailVerification.as_view(), name='email_verify'),
+    path('password_reset/<slug:uidb64>/<slug:token>/', views.PasswordReset.as_view(), name='password_reset'),
+    path('forget_password/', views.ForgetPassword.as_view()),
     path('send_verify_mail/', views.SendVerifyMail.as_view()),
 ]
