@@ -117,12 +117,15 @@ class RoomDetail(APIView):
         if Room.objects.get(id=room_id).room_type == 'course':
             return error_response("Course rooms cannot be deleted.", status.HTTP_400_BAD_REQUEST)
         # notify users that were in this room
+        ## !!!
+        for in_member in RoomMember.objects.filter(room_id=room_id):
+            Notification(user=in_member,
+                     message=f"房間「{Room.objects.get(id=room_id).title}」被房主刪除了。").save()
         room = Room.objects.get(id=room_id)
         room.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# What's the difference between the 2 following API?
 class RoomMemberList(APIView):
     permission_classes = [permissions.IsAuthenticated, IsVerify]
 
@@ -172,6 +175,8 @@ class RoomJoin(APIView):
 
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_id))
         RoomRecord(room_id=room_id, recording=f"{data['nickname']}({request.user.username}) 加入了房間").save()
+        Notification(user=request.user,
+                     message=f"{member.member.username} 加入了房間「{Room.objects.get(id=room_id).title}」。").save()
         #response = requests.post(f'http://127.0.0.1:8090/wsServer/notify/room/{room_id}/join/',
         #                  {'join_userID': request.user.id})
         #print(response.status_code)
@@ -190,8 +195,8 @@ class RoomLeave(APIView):
         if member.access_level == 'admin':
             return error_response("You are admin, can't leave the room.", status.HTTP_400_BAD_REQUEST)
 
-        RoomRecord(room=Room.objects.get(id=room_id), recording=f"{member.nickname}({member.member.username}) 離開了房間")\
-            .save()
+        RoomRecord(room=Room.objects.get(id=room_id),
+                   recording=f"{member.nickname}({member.member.username}) 離開了房間").save()
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -271,8 +276,6 @@ class RoomUserUnBlock(APIView):
                      message=f"{member.member.username} 將你從房間「{Room.objects.get(id=room_id).title}」解封了").save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# in permission.py add isManager() for authorization needs?
-
 
 class RoomUserRemove(APIView):
     permission_classes = [permissions.IsAuthenticated, IsVerify]
@@ -333,6 +336,12 @@ class SetAccessLevel(APIView):
                 if serializer.is_valid():
                     serializer.save()
                     result[key] = value
+                    if value == 'user':
+                        Notification(user=int(key),
+                                     message=f"你被「{Room.objects.get(id=room_id).title}」的房主設置為一般使用者。").save()
+                    elif value == 'manager':
+                        Notification(user=int(key),
+                                     message=f"你被「{Room.objects.get(id=room_id).title}」的房主設置為管理者。").save()
                 else:
                     result[key] = f'error: {serializer.errors}'
             else:
@@ -360,8 +369,11 @@ class TransferAdmin(APIView):
         origin_admin.save()
         after_admin.access_level = "admin"
         after_admin.save()
-
         # TODO: room record and notification
+        RoomRecord(room=Room.objects.get(id=room_id),
+                   recording=f"{member.nickname}({member.member.username})被升為「{Room.objects.get(id=room_id).title}」的房主。").save()
+        Notification(user=user_id,
+                     message=f"你被升為「{Room.objects.get(id=room_id).title}」的房主。").save()
 
         return Response(status=status.HTTP_200_OK)
 
@@ -397,6 +409,8 @@ class InviteUser(APIView):
                         inviter=request.user)
 
         # TODO: room record and notification
+        Notification(user=user_id,
+                     message=f"你被邀請進入房間:「{Room.objects.get(id=room_id).title}」。").save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
