@@ -16,6 +16,7 @@ class Room(models.Model):
     room_type = models.CharField(choices=TYPE_CHOICES, default='public', max_length=10)
     room_category = models.CharField(choices=CATEGORY_CHOICES, default='course', max_length=20)
     people_limit = models.IntegerField(default=0)
+    image_url = models.URLField()
 
     def __str__(self):
         return self.title

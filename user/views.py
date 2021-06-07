@@ -101,7 +101,7 @@ class UserList(APIView):
 
 
 class UserDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsVerify]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self, user_id):
         try:
@@ -129,7 +129,7 @@ class UserDetail(APIView):
 
 
 class GetUserID(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsVerify]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         return Response({"id": request.user.id})
