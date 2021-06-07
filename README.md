@@ -51,3 +51,11 @@ python3 manage.py migrate
    ```python
    python manage.py runserver
    ```
+
+## TODO 
+- [ ] 完善 notification 系統
+- [ ] 完整 category list 
+- [ ] 與 websocket 溝通
+- [ ] room image
+- [ ] user image
+- [ ] 錯誤訊息改成中文
