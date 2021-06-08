@@ -24,11 +24,12 @@ class RoomBlockSerializer(serializers.ModelSerializer):
     room_id = serializers.ReadOnlyField(source='room.id')
     blocked_user_id = serializers.ReadOnlyField(source='blocked_user.id')
     block_manager_id = serializers.ReadOnlyField(source='block_manager.id')
-    username = serializers.ReadOnlyField(source='member.username')
+    user_username = serializers.ReadOnlyField(source='blocked_user.username')
+    manager_username = serializers.ReadOnlyField(source='block_manager.username')
 
     class Meta:
         model = RoomBlock
-        fields = ['room_id', 'blocked_user_id', 'block_manager_id', 'reason', 'username']
+        fields = ['room_id', 'blocked_user_id', 'block_manager_id', 'reason', 'user_username', 'manager_username']
 
 
 class RoomInvitingSerializer(serializers.ModelSerializer):

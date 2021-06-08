@@ -3,9 +3,15 @@ from django.db import models
 from django.shortcuts import reverse
 
 TYPE_CHOICES = [('public', '公開房間'), ('private', '私密房間'), ('course', '課程討論房間')]
-CATEGORY_CHOICES = [('course', '課程討論'), ('find_group', '尋求組隊')]
+CATEGORY_CHOICES = [
+    ('course', '課程討論'),
+    ('eating', '吃飯')
+]
+CATEGORY_IMAGE_URL = {
+    'course': 'https://i.imgur.com/GIiSOLM.jpg',
+    'eating': 'https://i.imgur.com/kN4J0UL.jpg',
+}
 ACCESS_CHOICES = [('admin', '房主'), ('manager', '管理員'), ('user', '一般成員')]
-#INVITE_CHOICES = [('accept', 'accept'), ('reject', 'reject'), ('open', 'open')]
 
 
 class Room(models.Model):
@@ -16,7 +22,7 @@ class Room(models.Model):
     room_type = models.CharField(choices=TYPE_CHOICES, default='public', max_length=10)
     room_category = models.CharField(choices=CATEGORY_CHOICES, default='course', max_length=20)
     people_limit = models.IntegerField(default=0)
-    image_url = models.URLField()
+    image_url = models.URLField(default="")
 
     def __str__(self):
         return self.title

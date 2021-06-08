@@ -42,7 +42,7 @@ def send_reset_mail(request, user):
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))
     domain = get_current_site(request).domain
     token = token_generator.make_token(user)
-    link = reverse('password_reset', kwargs={'uidb64': uidb64, 'token': token})
+    link = f"/forgetpwd/{uidb64}/{token}/"
     url = 'http://' + domain + link
     email_subject = '[Online Group] 重設密碼'
     email_body = f'{user.username}你好，以下是重設密碼連結 {url}'
@@ -80,7 +80,7 @@ class ChangePasswordView(APIView):
     def put(self, request, user_id):
         user = self.get_object(user_id)
         if user != request.user:
-            return Response({"error": "You can only change your password"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "You can only change your password"}, status=status.HTTP_403_FORBIDDEN)
         password = request.data["old_password"]
         if not user.check_password(password):
             return Response({"error": "old password is not correct"}, status=status.HTTP_400_BAD_REQUEST)
@@ -118,7 +118,7 @@ class UserDetail(APIView):
         user = self.get_object(user_id)
         origin_mail = user.email
         if user != request.user:
-            return Response({"error": "You can only edit yourself profile"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "You can only edit yourself profile"}, status=status.HTTP_403_FORBIDDEN)
         serializer = UserEditSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             user = serializer.save()
@@ -221,10 +221,6 @@ class ReadNotification(APIView):
             return Response({"error": "notification id does not exist or it does not belong to you"},
                             status=status.HTTP_400_BAD_REQUEST)
         notice = Notification.objects.get(id=notify_id, user=request.user)
-        if notice.status == 'read':
-            return Response({"error": "notification has been read."}, status=status.HTTP_400_BAD_REQUEST)
-        notify_serializer = NotifyEditSerializer(notice, many=True)
-        if not notify_serializer.is_valid():
-            return Response(notify_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        notify_serializer.save(status='read')
-        return Response(notify_serializer.data)
+        notice.status = "read"
+        notice.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
