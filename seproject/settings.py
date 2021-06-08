@@ -67,6 +67,7 @@ CORS_ALLOWED_ORIGINS = (
     # TODO - set this properly for production
     'http://localhost:8080',
     'http://localhost:8000',
+    'https://ntu-online-group.herokuapp.com/',
 )
 
 ROOT_URLCONF = 'seproject.urls'
