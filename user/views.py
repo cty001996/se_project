@@ -26,7 +26,7 @@ def send_verify_mail(request, user):
     user.is_verify = False
     user.save()
     link = f"/verify-mail/{uidb64}/{token}/"
-    url = 'http://' + domain + link
+    url = 'https://' + domain + link
     email_subject = '[Online Group] 驗證信'
     email_body = f'{user.username}你好，以下是驗證連結 {url}'
     email = EmailMessage(
@@ -43,7 +43,7 @@ def send_reset_mail(request, user):
     domain = get_current_site(request).domain
     token = token_generator.make_token(user)
     link = f"/forgetpwd/{uidb64}/{token}/"
-    url = 'http://' + domain + link
+    url = 'https://' + domain + link
     email_subject = '[Online Group] 重設密碼'
     email_body = f'{user.username}你好，以下是重設密碼連結 {url}'
     email = EmailMessage(
