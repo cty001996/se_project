@@ -25,7 +25,7 @@ def send_verify_mail(request, user):
     token = token_generator.make_token(user)
     user.is_verify = False
     user.save()
-    link = reverse('email_verify', kwargs={'uidb64': uidb64, 'token': token})
+    link = f"/verify-mail/{uidb64}/{token}/"
     url = 'http://' + domain + link
     email_subject = '[Online Group] 驗證信'
     email_body = f'{user.username}你好，以下是驗證連結 {url}'
