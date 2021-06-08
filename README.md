@@ -53,11 +53,10 @@ python3 manage.py migrate
    ```
 
 ## TODO 
-- [ ] 完善 notification 系統
+- [x] 完善 notification 系統
 - [ ] 完整 category list 
 - [ ] 與 websocket 溝通
-- [ ] user image
 - [ ] 錯誤訊息改成中文
 - [ ] unit test
-- [ ] frontend register url
-- [ ] web socket problem
+- [x] frontend register url
+- [ ] get all admin room api

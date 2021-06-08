@@ -5,11 +5,13 @@ from django.shortcuts import reverse
 TYPE_CHOICES = [('public', '公開房間'), ('private', '私密房間'), ('course', '課程討論房間')]
 CATEGORY_CHOICES = [
     ('course', '課程討論'),
-    ('eating', '吃飯')
+    ('eating', '吃飯'),
+    ('hiking', '爬山')
 ]
 CATEGORY_IMAGE_URL = {
     'course': 'https://i.imgur.com/GIiSOLM.jpg',
     'eating': 'https://i.imgur.com/kN4J0UL.jpg',
+    'hiking': 'https://i.imgur.com/17SSeJb.png',
 }
 ACCESS_CHOICES = [('admin', '房主'), ('manager', '管理員'), ('user', '一般成員')]
 

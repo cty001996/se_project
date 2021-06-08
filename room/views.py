@@ -49,7 +49,7 @@ def add_notification(user, notify_string):
     Notification(user=user,
                  message=notify_string).save()
     response = requests.post(
-        f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/user/{user.id}/'
+        f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/user/{user.id}/',
     )
     print(response.content)
 
@@ -287,6 +287,7 @@ class RoomUserBlock(APIView):
         if RoomMember.objects.filter(room_id=room_id, member=user_id).exists():
             RoomMember.objects.get(room_id=room_id, member=user_id).delete()
             ws_leave_room(room_id, target.id)
+            # TODO: update block list
 
 
         RoomRecord(room=Room.objects.get(id=room_id),
@@ -338,8 +339,8 @@ class RoomUserRemove(APIView):
         if not RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
             return error_response("The user is not in the room.", status.HTTP_400_BAD_REQUEST)
         removal = RoomMember.objects.get(room_id=room_id, member_id=user_id)
-        if removal.access_level != "user":
-            return error_response("The user is admin or manager, cannot be removed.", status.HTTP_403_FORBIDDEN)
+        if removal.access_level == "admin":
+            return error_response("房主無法被踢出房間", status.HTTP_403_FORBIDDEN)
 
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 踢掉了 {removal.nickname}({removal.member.username})").save()
