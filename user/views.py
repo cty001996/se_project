@@ -21,7 +21,7 @@ from .permissions import IsVerify
 
 def send_verify_mail(request, user):
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))
-    domain = get_current_site(request).domain
+    domain = 'https://ntu-online-group.herokuapp.com'
     token = token_generator.make_token(user)
     user.is_verify = False
     user.save()
@@ -40,7 +40,7 @@ def send_verify_mail(request, user):
 
 def send_reset_mail(request, user):
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))
-    domain = get_current_site(request).domain
+    domain = 'https://ntu-online-group.herokuapp.com'
     token = token_generator.make_token(user)
     link = f"/forgetpwd/{uidb64}/{token}/"
     url = 'https://' + domain + link
