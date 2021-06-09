@@ -26,7 +26,7 @@ def ws_update_room(room_id, update_string):
         f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/room/{room_id}/update/',
         {'update_data': update_string}
     )
-    print(response)
+    print(response.content)
 
 
 def ws_join_room(room_id, user_id):
@@ -34,7 +34,7 @@ def ws_join_room(room_id, user_id):
         f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/room/{room_id}/join/',
         {'join_userID': user_id}
     )
-    print(response)
+    print(response.content)
 
 
 def ws_leave_room(room_id, user_id):
@@ -42,7 +42,7 @@ def ws_leave_room(room_id, user_id):
         f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/room/{room_id}/remove/',
         {'removed_userID': user_id}
     )
-    print(response)
+    print(response.content)
 
 
 def add_notification(user, notify_string):
@@ -120,10 +120,6 @@ class RoomList(APIView):
         member = member_serializer.instance
         RoomRecord(room=room,
                    recording=f"{member.nickname}({member.member.username}) 建立了房間!").save()
-
-        response = requests.post(f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/room/{room.id}/join/',
-                                 {'join_userID': request.user.id})
-        print(response.status_code)
         return Response(room_serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -152,7 +148,7 @@ class RoomDetail(APIView):
             serializer.save()
             RoomRecord(room=room,
                        recording=f"{member.nickname}({member.member.username}) 修改了房間設定").save()
-
+            ws_update_room(room_id, 'profile')
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -170,7 +166,7 @@ class RoomDetail(APIView):
             add_notification(in_member.member, f"房間「{Room.objects.get(id=room_id).title}」被房主刪除了。")
         room = Room.objects.get(id=room_id)
         room.delete()
-        ws_update_room(room.id, 'room_delete')
+        ws_update_room(room_id, 'delete_room')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -222,7 +218,7 @@ class RoomJoin(APIView):
 
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_id))
         RoomRecord(room_id=room_id, recording=f"{data['nickname']}({request.user.username}) 加入了房間").save()
-        ws_join_room(room_id, request.user.id)
+        ws_update_room(room_id, 'member_list')
         return Response(member_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -241,6 +237,7 @@ class RoomLeave(APIView):
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 離開了房間").save()
         ws_leave_room(room_id, request.user.id)
+        ws_update_room(room_id, 'member_list')
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -287,7 +284,7 @@ class RoomUserBlock(APIView):
         if RoomMember.objects.filter(room_id=room_id, member=user_id).exists():
             RoomMember.objects.get(room_id=room_id, member=user_id).delete()
             ws_leave_room(room_id, target.id)
-            # TODO: update block list
+            ws_update_room(room_id, 'member_list')
 
 
         RoomRecord(room=Room.objects.get(id=room_id),
@@ -295,6 +292,7 @@ class RoomUserBlock(APIView):
         add_notification(target,
                          f"你被 {member.member.username} 禁止進入了房間「{Room.objects.get(id=room_id).title}」，" +
                          f"原因為:{request.data.get('reason', None)}")
+        ws_update_room(room_id, 'block_list')
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -348,6 +346,7 @@ class RoomUserRemove(APIView):
                          f"你被 {member.member.username} 踢出了了房間「{Room.objects.get(id=room_id).title}」")
         removal.delete()
         ws_leave_room(room_id, user_id)
+        ws_update_room(room_id, 'member_list')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -356,6 +355,15 @@ class UserRoom(APIView):
 
     def get(self, request):
         rooms = Room.objects.filter(members__member=request.user)
+        serializer = RoomSerializer(rooms, many=True)
+        return Response(serializer.data)
+
+
+class UserAdminRoom(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        rooms = Room.objects.filter(members__member=request.user, members__access_level='admin')
         serializer = RoomSerializer(rooms, many=True)
         return Response(serializer.data)
 
@@ -395,7 +403,7 @@ class SetAccessLevel(APIView):
                     result[key] = f'error: {serializer.errors}'
             else:
                 result[key] = 'error: user is not in the room'
-
+        ws_update_room(room_id, 'member_list')
         return Response(result)
 
 
@@ -421,6 +429,7 @@ class TransferAdmin(APIView):
 
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{after_admin.nickname}({after_admin.member.username})被升為房主").save()
+        ws_update_room(room_id, 'member_list')
         add_notification(after_admin.member,
                          f"你被升為「{Room.objects.get(id=room_id).title}」的房主")
         return Response(status=status.HTTP_200_OK)
@@ -457,6 +466,7 @@ class InviteUser(APIView):
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({request.user.username}) 邀請了 {target.username} 進入房間").save()
+        ws_update_room(room_id, 'invite_list')
         add_notification(target,
                          f"你被邀請進入房間:「{Room.objects.get(id=room_id).title}」")
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -480,7 +490,7 @@ class AcceptInviting(APIView):
 
         serializer.save(member=request.user, room=Room.objects.get(id=invite.room_id))
         RoomRecord(room_id=invite.room_id, recording=f"{data['nickname']}({request.user.username}) 同意了邀請進入了房間").save()
-        ws_join_room(invite.room.id, request.user.id)
+        ws_update_room(invite.room_id, 'member_list,invite_list')
         invite.delete()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -494,6 +504,7 @@ class RejectInviting(APIView):
         invite = RoomInviting.objects.get(id=invite_id, invited=request.user)
         invite.delete()
         RoomRecord(room_id=invite.room_id, recording=f"{request.user.username} 拒絕了房間的邀請").save()
+        ws_update_room(invite.room_id, 'invite_list')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

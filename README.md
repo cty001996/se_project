@@ -55,8 +55,17 @@ python3 manage.py migrate
 ## TODO 
 - [x] 完善 notification 系統
 - [ ] 完整 category list 
-- [ ] 與 websocket 溝通
+- [x] 與 websocket 溝通
 - [ ] 錯誤訊息改成中文
 - [ ] unit test
 - [x] frontend register url
 - [ ] get all admin room api
+- [ ] 畫流程圖
+
+## 流程圖
+
+1. JoinRoom
+2. LeaveRoom   
+3. BlockUser
+4. InviteUser
+5. DeleteRoom

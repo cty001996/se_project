@@ -16,6 +16,7 @@ urlpatterns = [
     path('room/<int:room_id>/unblock/<int:user_id>/', views.RoomUserUnBlock.as_view()),
     path('room/<int:room_id>/remove/<int:user_id>/', views.RoomUserRemove.as_view()),
     path('user_room/', views.UserRoom.as_view()),
+    path('user_admin_room/', views.UserAdminRoom.as_view()),
     path('room/<int:room_id>/set_access_level/', views.SetAccessLevel.as_view()),
     path('room/<int:room_id>/transfer_admin/<int:user_id>/', views.TransferAdmin.as_view()),
     path('room/<int:room_id>/invite/<slug:username>/', views.InviteUser.as_view()),
