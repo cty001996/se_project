@@ -61,7 +61,8 @@ class RoomCreateTest(TestCase):
 class RoomJoinTest(TestCase):
     def setUp(self):
         self.test_room = Room.objects.create(
-            title='test_room'
+            title='test_room',
+            people_limit=10,
         )
         self.private_room = Room.objects.create(
             title='private_room',
@@ -80,9 +81,9 @@ class RoomJoinTest(TestCase):
     def test_room_join(self):
         client, user = api_client()
         response = client.post(f'/room/{self.test_room.id}/join_room/', {'nickname': 'test_nickname'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         member = RoomMember.objects.get(room_id=self.test_room.id, nickname='test_nickname')
         self.assertEqual(member.access_level, 'user')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_room_join_with_same_nickname(self):
         client, user = api_client()

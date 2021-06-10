@@ -205,7 +205,7 @@ class RoomJoin(APIView):
         if RoomBlock.objects.filter(room_id=room_id, blocked_user=request.user).exists():
             return error_response("你被此房間封鎖了，無法進入", status.HTTP_403_FORBIDDEN)
         if Room.objects.get(id=room_id).people_limit != 0 and \
-                Room.objects.get(id=room_id).people_limit >= len(RoomMember.objects.filter(room_id=room_id)):
+                Room.objects.get(id=room_id).people_limit <= len(RoomMember.objects.filter(room_id=room_id)):
             return error_response("房間已滿，無法進入", status.HTTP_400_BAD_REQUEST)
         if Room.objects.get(id=room_id).room_type == 'private':
             return error_response("此為私人房間，無法直接進入", status.HTTP_403_FORBIDDEN)
