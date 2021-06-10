@@ -29,9 +29,6 @@ class Room(models.Model):
     def __str__(self):
         return self.title
 
-    def get_absolute_url(self):
-        return reverse("room:detail", kwargs={"pk": self.id})
-
     class Meta:
         ordering = ['create_time']
 
@@ -42,8 +39,6 @@ class RoomMember(models.Model):
     nickname = models.CharField(max_length=20)
     access_level = models.CharField(choices=ACCESS_CHOICES, default='user', max_length=20)
 
-    class Meta:
-        unique_together = ('room', 'member',)
 
 
 class RoomBlock(models.Model):
@@ -53,8 +48,6 @@ class RoomBlock(models.Model):
     reason = models.CharField(max_length=50)
     block_manager = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='block_list', on_delete=models.CASCADE)
 
-    class Meta:
-        unique_together = ('room', 'blocked_user',)
 
 
 class RoomInviting(models.Model):
@@ -64,8 +57,6 @@ class RoomInviting(models.Model):
     invited = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='invited_list', on_delete=models.CASCADE)
     #status = models.CharField(choices=INVITE_CHOICES, default='open', max_length=10)
 
-    class Meta:
-        unique_together = ('room', 'invited',)
 
 
 class RoomInvitingRequest(models.Model):
@@ -74,8 +65,6 @@ class RoomInvitingRequest(models.Model):
     request_time = models.DateTimeField(auto_now_add=True)
     #status = models.CharField(choices=INVITE_CHOICES, default='open', max_length=10)
 
-    class Meta:
-        unique_together = ('room', 'request_user',)
 
 
 class RoomRecord(models.Model):

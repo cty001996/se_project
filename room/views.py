@@ -107,7 +107,7 @@ class RoomList(APIView):
         member_serializer = RoomMemberSerializer(data=data)
 
         if len(RoomMember.objects.filter(member=request.user, access_level="admin")) >= 50:
-            return error_response("房間已到人數上限！", status.HTTP_400_BAD_REQUEST)
+            return error_response("已到創房上限", status.HTTP_400_BAD_REQUEST)
         if not room_serializer.is_valid():
             return Response(room_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         if not member_serializer.is_valid():
@@ -201,10 +201,11 @@ class RoomJoin(APIView):
         if not Room.objects.filter(id=room_id).exists():
             return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are already in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你已在房內了", status.HTTP_400_BAD_REQUEST)
         if RoomBlock.objects.filter(room_id=room_id, blocked_user=request.user).exists():
             return error_response("你被此房間封鎖了，無法進入", status.HTTP_403_FORBIDDEN)
-        if Room.objects.get(id=room_id).people_limit == len(RoomMember.objects.filter(room_id=room_id)):
+        if Room.objects.get(id=room_id).people_limit != 0 and \
+                Room.objects.get(id=room_id).people_limit >= len(RoomMember.objects.filter(room_id=room_id)):
             return error_response("房間已滿，無法進入", status.HTTP_400_BAD_REQUEST)
         if Room.objects.get(id=room_id).room_type == 'private':
             return error_response("此為私人房間，無法直接進入", status.HTTP_403_FORBIDDEN)
@@ -215,6 +216,8 @@ class RoomJoin(APIView):
         member_serializer = RoomMemberSerializer(data=data)
         if not member_serializer.is_valid():
             return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if RoomMember.objects.filter(room_id=room_id, nickname=data["nickname"]).exists():
+            return error_response("暱稱已存在", status.HTTP_400_BAD_REQUEST)
 
         member_serializer.save(member=request.user, room=Room.objects.get(id=room_id))
         RoomRecord(room_id=room_id, recording=f"{data['nickname']}({request.user.username}) 加入了房間").save()

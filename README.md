@@ -59,7 +59,7 @@ python3 manage.py migrate
 - [ ] 錯誤訊息改成中文
 - [ ] unit test
 - [x] frontend register url
-- [ ] get all admin room api
+- [x] get all admin room api
 - [ ] 畫流程圖
 
 ## 流程圖
