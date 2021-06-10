@@ -59,9 +59,9 @@ class RoomRecordList(APIView):
 
     def get(self, request, room_id):
         if not Room.objects.filter(id=room_id).exists():
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         records = RoomRecord.objects.filter(room_id=room_id)
         serializer = RoomRecordSerializer(records, many=True)
         return Response(serializer.data)
@@ -100,7 +100,7 @@ class RoomList(APIView):
 
     def post(self, request):
         if not request.user.is_verify:
-            return error_response("You do not have the right to create a room", status.HTTP_403_FORBIDDEN)
+            return error_response("你沒有權限建房", status.HTTP_403_FORBIDDEN)
         room_serializer = RoomSerializer(data=request.data)
         data = request.data.copy()
         data["access_level"] = "admin"
@@ -136,12 +136,12 @@ class RoomDetail(APIView):
 
     def put(self, request, room_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         if not member.access_level == 'admin' and not member.access_level == 'manager':
-            return error_response("You are not authorized to change settings.", status.HTTP_403_FORBIDDEN)
+            return error_response("你沒有更改設定的權限", status.HTTP_403_FORBIDDEN)
         room = Room.objects.get(id=room_id)
         serializer = RoomSerializer(room, data=request.data, partial=True)
         if serializer.is_valid():
@@ -154,11 +154,11 @@ class RoomDetail(APIView):
 
     def delete(self, request, room_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
-            return error_response("Only admin is authorized to delete room.", status.HTTP_403_FORBIDDEN)
+            return error_response("只有房主有權限刪房", status.HTTP_403_FORBIDDEN)
         if Room.objects.get(id=room_id).room_type == 'course':
             return error_response("課程討論房間無法被刪除！", status.HTTP_400_BAD_REQUEST)
 
@@ -175,7 +175,7 @@ class RoomMemberList(APIView):
 
     def get(self, request, room_id):
         if not Room.objects.filter(id=room_id).exists():
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         members = RoomMember.objects.filter(room_id=room_id)
         serializer = RoomMemberSerializer(members, many=True)
         return Response(serializer.data)
@@ -186,9 +186,9 @@ class RoomMemberDetail(APIView):
 
     def get(self, request, room_id, user_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
-            return error_response("Member does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("此使用者不在房間內", status.HTTP_404_NOT_FOUND)
         member = RoomMember.objects.get(room_id=room_id, member_id=user_id)
         serializer = RoomMemberSerializer(member)
         return Response(serializer.data)
@@ -250,9 +250,9 @@ class RoomBlockList(APIView):
 
     def get(self, request, room_id):
         if not Room.objects.filter(id=room_id).exists():
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         blocks = RoomBlock.objects.filter(room_id=room_id)
         serializer = RoomBlockSerializer(blocks, many=True)
         return Response(serializer.data)
@@ -263,20 +263,20 @@ class RoomUserBlock(APIView):
 
     def post(self, request, room_id, user_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
 
         if member.access_level == 'user':
-            return error_response("You don't have permission to do this action", status.HTTP_403_FORBIDDEN)
+            return error_response("你沒有封鎖人的權限", status.HTTP_403_FORBIDDEN)
         if not CustomUser.objects.filter(id=user_id).exists():
-            return error_response("The target does not exist", status.HTTP_404_NOT_FOUND)
+            return error_response("此使用者不在房間內", status.HTTP_404_NOT_FOUND)
         target = CustomUser.objects.get(id=user_id)
         if user_id == request.user.id:
-            return error_response("You can't block yourself", status.HTTP_400_BAD_REQUEST)
+            return error_response("不能封鎖自己", status.HTTP_400_BAD_REQUEST)
         if RoomBlock.objects.filter(room_id=room_id, blocked_user=user_id).exists():
-            return error_response("The user has already been blocked", status.HTTP_400_BAD_REQUEST)
+            return error_response("此使用者已經被封鎖", status.HTTP_400_BAD_REQUEST)
 
         serializer = RoomBlockSerializer(data=request.data)
         if not serializer.is_valid():
@@ -305,17 +305,17 @@ class RoomUserUnBlock(APIView):
 
     def delete(self, request, room_id, user_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         if member.access_level == 'user':
-            return error_response("You don't have permission to do this action", status.HTTP_403_FORBIDDEN)
+            return error_response("你沒有權限解封", status.HTTP_403_FORBIDDEN)
         if not CustomUser.objects.filter(id=user_id).exists():
-            return error_response("Target does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("此使用者不存在", status.HTTP_404_NOT_FOUND)
         target = CustomUser.objects.get(id=user_id)
         if not RoomBlock.objects.filter(room_id=room_id, blocked_user=user_id).exists():
-            return error_response("The user has not been blocked yet", status.HTTP_400_BAD_REQUEST)
+            return error_response("此使用者尚未被封鎖", status.HTTP_400_BAD_REQUEST)
         block = RoomBlock.objects.get(room_id=room_id, blocked_user=user_id)
         block.delete()
 
@@ -331,14 +331,14 @@ class RoomUserRemove(APIView):
 
     def delete(self, request, room_id, user_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist.", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         member = RoomMember.objects.get(room_id=room_id, member=request.user)
         if member.access_level == 'user':
-            return error_response("You don't have permission to do this action", status.HTTP_403_FORBIDDEN)
+            return error_response("你沒有權限踢除使用者", status.HTTP_403_FORBIDDEN)
         if not RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
-            return error_response("The user is not in the room.", status.HTTP_400_BAD_REQUEST)
+            return error_response("此使用者不在房間內", status.HTTP_400_BAD_REQUEST)
         removal = RoomMember.objects.get(room_id=room_id, member_id=user_id)
         if removal.access_level == "admin":
             return error_response("房主無法被踢出房間", status.HTTP_403_FORBIDDEN)
@@ -376,16 +376,16 @@ class SetAccessLevel(APIView):
 
     def put(self, request, room_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
-            return error_response("Only admin can set access level", status.HTTP_403_FORBIDDEN)
+            return error_response("只有房主有權限更改職稱", status.HTTP_403_FORBIDDEN)
 
         result={}
         for key, value in request.data.items():
             if value == 'admin':
-                result[key] = "error: can't set admin by this api"
+                result[key] = "error: 無法更改房主職稱"
                 continue
             if int(key) == request.user.id:
                 result[key] = "無法在此設定房主的權限，請使用轉移房主功能"
@@ -405,7 +405,7 @@ class SetAccessLevel(APIView):
                 else:
                     result[key] = f'error: {serializer.errors}'
             else:
-                result[key] = 'error: user is not in the room'
+                result[key] = 'error: 此使用者不在房間內'
         ws_update_room(room_id, 'member_list')
         return Response(result)
 
@@ -415,13 +415,13 @@ class TransferAdmin(APIView):
 
     def put(self, request, room_id, user_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         if not RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'admin':
-            return error_response("Only admin can transfer admin", status.HTTP_403_FORBIDDEN)
+            return error_response("只有房主可以更改房主", status.HTTP_403_FORBIDDEN)
         if not RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
-            return error_response("The user is not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("此使用者不在房間內", status.HTTP_400_BAD_REQUEST)
 
         origin_admin = RoomMember.objects.get(room_id=room_id, member=request.user)
         after_admin = RoomMember.objects.get(room_id=room_id, member_id=user_id)
@@ -447,11 +447,11 @@ class InviteUser(APIView):
         target = CustomUser.objects.get(username=username)
         user_id = target.id
         if not room_exist(room_id):
-            return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         if RoomMember.objects.get(room_id=room_id, member=request.user).access_level == 'user':
-            return error_response("Only admin and manager can invite user", status.HTTP_403_FORBIDDEN)
+            return error_response("你沒有權限邀請其他人", status.HTTP_403_FORBIDDEN)
         if RoomMember.objects.filter(room_id=room_id, member_id=user_id).exists():
             return error_response("使用者已在房內", status.HTTP_400_BAD_REQUEST)
         if RoomBlock.objects.filter(room_id=room_id, blocked_user_id=user_id).exists():
@@ -480,10 +480,10 @@ class AcceptInviting(APIView):
 
     def post(self, request, invite_id):
         if not RoomInviting.objects.filter(id=invite_id, invited=request.user).exists():
-            return error_response("Invite id does not exist or does not belong to you", status.HTTP_400_BAD_REQUEST)
+            return error_response("此邀請不是給你的", status.HTTP_400_BAD_REQUEST)
         invite = RoomInviting.objects.get(id=invite_id, invited=request.user)
         if not room_exist(invite.room_id):
-            return error_response("The room has been removed", status.HTTP_400_BAD_REQUEST)
+            return error_response("房間已被刪除", status.HTTP_400_BAD_REQUEST)
 
         data = request.data.copy()
         data["access_level"] = 'user'
@@ -503,7 +503,7 @@ class RejectInviting(APIView):
 
     def delete(self, request, invite_id):
         if not RoomInviting.objects.filter(id=invite_id, invited=request.user).exists():
-            return error_response("Invite id does not exist or does not belong to you", status.HTTP_400_BAD_REQUEST)
+            return error_response("此邀請不是給你的", status.HTTP_400_BAD_REQUEST)
         invite = RoomInviting.objects.get(id=invite_id, invited=request.user)
         invite.delete()
         RoomRecord(room_id=invite.room_id, recording=f"{request.user.username} 拒絕了房間的邀請").save()
@@ -525,9 +525,9 @@ class RoomInvitationList(APIView):
 
     def get(self, request, room_id):
         if not room_exist(room_id):
-            return error_response("Room does not exist", status.HTTP_404_NOT_FOUND)
+            return error_response("房間不存在", status.HTTP_404_NOT_FOUND)
         if not RoomMember.objects.filter(room_id=room_id, member=request.user).exists():
-            return error_response("You are not in the room", status.HTTP_400_BAD_REQUEST)
+            return error_response("你不在房間內", status.HTTP_400_BAD_REQUEST)
         invite_list = RoomInviting.objects.filter(room_id=room_id)
         serializer = RoomInvitingSerializer(invite_list, many=True)
         return Response(serializer.data)
