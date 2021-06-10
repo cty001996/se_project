@@ -239,9 +239,9 @@ class RoomLeave(APIView):
 
         RoomRecord(room=Room.objects.get(id=room_id),
                    recording=f"{member.nickname}({member.member.username}) 離開了房間").save()
+        member.delete()
         ws_leave_room(room_id, request.user.id)
         ws_update_room(room_id, 'member_list')
-        member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

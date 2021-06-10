@@ -64,8 +64,9 @@ python3 manage.py migrate
 
 ## 流程圖
 
-1. JoinRoom
-2. LeaveRoom   
-3. BlockUser
-4. InviteUser
-5. DeleteRoom
+- [X] CreateRoom
+- [X] JoinRoom
+- [X] LeaveRoom   
+- [X] BlockUser
+- [ ] InviteUser
+- [ ] DeleteRoom
