@@ -23,7 +23,6 @@ CATEGORY_CHOICES = [
     ('study', '讀書'),
     ('study_group', '讀書會'),
     ('watch_games', '看比賽'),
-    ('custom', '自訂')
 ]
 CATEGORY_IMAGE_URL = {
     'course': 'https://i.imgur.com/GIiSOLM.jpg',
