@@ -18,6 +18,8 @@ from .utils import token_generator
 
 from .permissions import IsVerify
 
+def error_response(message, status_code):
+    return Response({"error": message}, status=status_code)
 
 def send_verify_mail(request, user):
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))
@@ -80,10 +82,10 @@ class ChangePasswordView(APIView):
     def put(self, request, user_id):
         user = self.get_object(user_id)
         if user != request.user:
-            return Response({"error": "You can only change your password"}, status=status.HTTP_403_FORBIDDEN)
+            return error_response("只能更改自己的密碼", status.HTTP_403_FORBIDDEN)
         password = request.data["old_password"]
         if not user.check_password(password):
-            return Response({"error": "old password is not correct"}, status=status.HTTP_400_BAD_REQUEST)
+            return error_response("舊密碼不正確", status.HTTP_400_BAD_REQUEST)
         serializer = ChangePasswordSerializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -118,7 +120,7 @@ class UserDetail(APIView):
         user = self.get_object(user_id)
         origin_mail = user.email
         if user != request.user:
-            return Response({"error": "You can only edit yourself profile"}, status=status.HTTP_403_FORBIDDEN)
+            return error_response("只能修改自己的資料", status.HTTP_403_FORBIDDEN)
         serializer = UserEditSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             user = serializer.save()
@@ -148,8 +150,7 @@ class NotificationDetail(APIView):
 
     def delete(self, request, notify_id):
         if not Notification.objects.filter(id=notify_id, user=request.user).exists():
-            return Response({"error": "notification id does not exist or it does not belong to you"},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return error_response("這不是給你的通知", status.HTTP_400_BAD_REQUEST)
 
         removal = Notification.objects.get(id=notify_id, user=request.user)
         removal.delete()
@@ -172,8 +173,7 @@ class EmailVerification(APIView):
             return Response("success")
         else:
             # invalid link
-            return Response("failed", status=status.HTTP_400_BAD_REQUEST)
-
+            return error_response("信箱認證失敗", status.HTTP_400_BAD_REQUEST)
 
 class PasswordReset(APIView):
     permission_classes = [AllowAny]
@@ -187,10 +187,10 @@ class PasswordReset(APIView):
 
         if user is not None and token_generator.check_token(user, token):
             if not "password" in request.data:
-                return Response({"error": "must contain password field"}, status=status.HTTP_400_BAD_REQUEST)
+                return error_response("密碼是必填欄位", status.HTTP_400_BAD_REQUEST)
             user.set_password(request.data["password"])
             return Response("success")
-        return Response("error", status=status.HTTP_400_BAD_REQUEST)
+        return error_response("錯誤", status.HTTP_400_BAD_REQUEST)
 
 
 class ForgetPassword(APIView):
@@ -199,7 +199,7 @@ class ForgetPassword(APIView):
     def post(self, request):
         email = request.data.get('email', None)
         if not CustomUser.objects.filter(email=email).exists():
-            return Response({"error": "The email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+            return error_response("信箱不存在", status.HTTP_400_BAD_REQUEST)
         user = CustomUser.objects.get(email=email)
         send_reset_mail(request, user)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -218,8 +218,7 @@ class ReadNotification(APIView):
 
     def put(self, request, notify_id):
         if not Notification.objects.filter(id=notify_id, user=request.user).exists():
-            return Response({"error": "notification id does not exist or it does not belong to you"},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return error_response("通知不存在，或是此通知不是給你的", status.HTTP_400_BAD_REQUEST)
         notice = Notification.objects.get(id=notify_id, user=request.user)
         notice.status = "read"
         notice.save()

@@ -6,12 +6,45 @@ TYPE_CHOICES = [('public', '公開房間'), ('private', '私密房間'), ('cours
 CATEGORY_CHOICES = [
     ('course', '課程討論'),
     ('eating', '吃飯'),
-    ('hiking', '爬山')
+    ('hiking', '爬山'),
+    ('basketball', '打籃球'),
+    ('apex', 'Apex英雄'),
+    ('switch', '任天堂遊戲'),
+    ('running', '跑步'),
+    ('group_buy', '團購'),
+    ('shopping', '逛街'),
+    ('games', '打遊戲'),
+    ('clothes', '買衣服'),
+    ('mc', '麥當勞'),
+    ('kfc', '肯德基'),
+    ('movies', '看電影'),
+    ('concerts', '演唱會'),
+    ('table_tennis', '打桌球'),
+    ('study', '讀書'),
+    ('study_group', '讀書會'),
+    ('watch_games', '看比賽'),
+    ('custom', '自訂')
 ]
 CATEGORY_IMAGE_URL = {
     'course': 'https://i.imgur.com/GIiSOLM.jpg',
     'eating': 'https://i.imgur.com/kN4J0UL.jpg',
     'hiking': 'https://i.imgur.com/17SSeJb.png',
+    'basketball' : 'https://i.imgur.com/o2uS5WX.png',
+    'apex' : 'https://i.imgur.com/PkZu9rV.jpg',
+    'switch' : 'https://i.imgur.com/16C4zzd.png',
+    'running' : 'https://i.imgur.com/wc0HqRT.png',
+    'group_buy' : 'https://i.imgur.com/hcP3JA2.png',
+    'shopping' : 'https://i.imgur.com/85zF3RK.jpg',
+    'games' : 'https://i.imgur.com/ex5uIMF.jpg',
+    'clothes' : 'https://i.imgur.com/UElotjt.jpg',
+    'mc' : 'https://i.imgur.com/Ll9w1eq.png',
+    'kfc' : 'https://i.imgur.com/NBt3Xka.jpg',
+    'movies' : 'https://i.imgur.com/QzZKggo.png',
+    'concerts' : 'https://static.dw.com/image/18920718_403.jpg',
+    'table_tennis' : 'https://i.imgur.com/kluQV3e.jpg',
+    'study' : 'https://i.imgur.com/jneYUkV.jpg',
+    'study_group' : 'https://i.imgur.com/rM3O9xh.png',
+    'watch_games': 'https://i.imgur.com/Yya0Www.png',
 }
 ACCESS_CHOICES = [('admin', '房主'), ('manager', '管理員'), ('user', '一般成員')]
 
@@ -80,4 +113,3 @@ class RoomMessage(models.Model):
     message = models.TextField(max_length=500)
     nickname = models.CharField(max_length=100)
     recv_time = models.DateTimeField(auto_now_add=True)
-
