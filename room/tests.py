@@ -17,7 +17,6 @@ def api_client():
     client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     return client, user
 
-'''
 class GetAllRoomTest(TestCase):
     def setUp(self):
         Room.objects.create(
@@ -42,7 +41,7 @@ class RoomCreateTest(TestCase):
 
     def test_create_room(self):
         client, user = api_client()
-        response = client.  ('/room/', {'title': 'test_room', 'nickname': 'test_nickname'})
+        response = client.post('/room/', {'title': 'test_room', 'nickname': 'test_nickname'})
         room = Room.objects.get(title='test_room')
         serializer = RoomSerializer(room)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -113,7 +112,7 @@ class RoomLeaveTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         members = RoomMember.objects.filter(room_id=self.test_room.id, member=user)
         self.assertEqual(len(members), 0)
-'''
+
 class RoomInviteTest(TestCase):
     def setUp(self):
         self.test_room = Room.objects.create(
@@ -255,6 +254,10 @@ class TransferAdminTest(TestCase):
             email='test_user@test.com',
             password='test_user'
         )
+        self.nonmember = CustomUser.objects.create_user(
+            email='nonmember@test.com',
+            password='nonmember'
+        )
         RoomMember.objects.create(
             room=self.test_room,
             nickname='normal_user',
@@ -271,8 +274,18 @@ class TransferAdminTest(TestCase):
         )
 
         # have bugs, incomplete
-        response = client.put(f'room/{self.test_room.id}/transfer_admin/{user.id}/')
-        print(response.status_code)
-        print(response.data)
+        response = client.put(f'/room/{self.test_room.id}/transfer_admin/{self.test_user.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(RoomMember.objects.get(room_id=self.test_room.id, nickname='creator').access_level, 'manager')
+        self.assertEqual(RoomMember.objects.get(room_id=self.test_room.id, nickname='normal_user').access_level, 'admin')
 
+    def test_transfer_admin_nonmember(self):
+        client, user = api_client()
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='creator',
+            member=user,
+            access_level='admin'
+        )
+        response = client.put(f'/room/{self.test_room.id}/transfer_admin/{self.nonmember.id}/')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
