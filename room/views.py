@@ -26,7 +26,6 @@ def ws_update_room(room_id, update_string):
         f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/room/{room_id}/update/',
         {'update_data': update_string}
     )
-    print(response.content)
 
 
 def ws_join_room(room_id, user_id):
@@ -34,7 +33,6 @@ def ws_join_room(room_id, user_id):
         f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/room/{room_id}/join/',
         {'join_userID': user_id}
     )
-    print(response.content)
 
 
 def ws_leave_room(room_id, user_id):
@@ -42,7 +40,6 @@ def ws_leave_room(room_id, user_id):
         f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/room/{room_id}/remove/',
         {'removed_userID': user_id}
     )
-    print(response.content)
 
 
 def add_notification(user, notify_string):
@@ -51,7 +48,6 @@ def add_notification(user, notify_string):
     response = requests.post(
         f'https://ntu-online-group-ws.herokuapp.com/wsServer/notify/user/{user.id}/',
     )
-    print(response.content)
 
 
 class RoomRecordList(APIView):
@@ -171,7 +167,7 @@ class RoomDetail(APIView):
 
 
 class RoomMemberList(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsVerify]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, room_id):
         if not Room.objects.filter(id=room_id).exists():

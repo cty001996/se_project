@@ -113,6 +113,7 @@ class RoomLeaveTest(TestCase):
         members = RoomMember.objects.filter(room_id=self.test_room.id, member=user)
         self.assertEqual(len(members), 0)
 
+'''
 class RoomInviteTest(TestCase):
     def setUp(self):
         self.test_room = Room.objects.create(
@@ -140,8 +141,7 @@ class RoomInviteTest(TestCase):
             member=user,
             access_level='admin'
         )
-        response = client.post(f'/room/{self.test_room.id}/invite/{self.test_user.username}/',
-                               {'room': self.test_room, 'inviter': user, 'invited': self.test_user})
+        response = client.post(f'/room/{self.test_room.id}/invite/{self.test_user.username}/')
         invite = RoomInviting.objects.get(room=self.test_room)
         serializer = RoomInvitingSerializer(invite)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -164,11 +164,9 @@ class RoomInviteTest(TestCase):
             access_level='user'
         )
         # invite
-        response = client.post(f'/room/{self.test_room.id}/invite/{self.test_user.username}/',
-                               {'room': self.test_room, 'inviter': user, 'invited': self.test_user})
+        response = client.post(f'/room/{self.test_room.id}/invite/{self.test_user.username}/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
-        '''
+
     def test_invite_people_limit(self):
         # 1
         client, user = api_client()
@@ -182,12 +180,11 @@ class RoomInviteTest(TestCase):
         # invite a 3rd user
         for i in RoomMember.objects.filter(id=self.small_room.id):
             print(i.nickname)
-        response = client.post(f'/room/{self.small_room.id}/invite/{self.test_user1.username}/',
-                               {'room': self.small_room, 'inviter': user, 'invited': self.test_user1})
+        response = client.post(f'/room/{self.small_room.id}/invite/{self.test_user1.username}/')
         print('invited on the list: ', RoomInviting.objects.get(room=self.small_room).invited)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
 '''
+
 class BlockTest(TestCase):
     def setUp(self):
         self.test_room = Room.objects.create(
