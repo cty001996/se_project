@@ -4,8 +4,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.test import TestCase
 from rest_framework import status
 
-from room.models import Room, RoomMember
-from room.serializers import RoomSerializer
+from room.models import Room, RoomMember, RoomInviting, RoomBlock
+from room.serializers import RoomSerializer, RoomInvitingSerializer, RoomBlockSerializer
 from room.views import RoomList
 from user.models import CustomUser
 
@@ -17,7 +17,7 @@ def api_client():
     client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     return client, user
 
-
+'''
 class GetAllRoomTest(TestCase):
     def setUp(self):
         Room.objects.create(
@@ -42,7 +42,7 @@ class RoomCreateTest(TestCase):
 
     def test_create_room(self):
         client, user = api_client()
-        response = client.post('/room/', {'title': 'test_room', 'nickname': 'test_nickname'})
+        response = client.  ('/room/', {'title': 'test_room', 'nickname': 'test_nickname'})
         room = Room.objects.get(title='test_room')
         serializer = RoomSerializer(room)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -113,9 +113,166 @@ class RoomLeaveTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         members = RoomMember.objects.filter(room_id=self.test_room.id, member=user)
         self.assertEqual(len(members), 0)
+'''
+class RoomInviteTest(TestCase):
+    def setUp(self):
+        self.test_room = Room.objects.create(
+            title='test_room',
+            people_limit=10
+        )
+        self.small_room = Room.objects.create(
+            title='small_room',
+            people_limit=1
+        )
+        self.test_user = CustomUser.objects.create_user(
+            email='test_user@test.com',
+            password='test_user'
+        )
+        self.test_user1 = CustomUser.objects.create_user(
+            email='test1_user@test.com',
+            password='test1_user'
+        )
 
+    def test_invite(self):
+        client, user = api_client()
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='creator',
+            member=user,
+            access_level='admin'
+        )
+        response = client.post(f'/room/{self.test_room.id}/invite/{self.test_user.username}/',
+                               {'room': self.test_room, 'inviter': user, 'invited': self.test_user})
+        invite = RoomInviting.objects.get(room=self.test_room)
+        serializer = RoomInvitingSerializer(invite)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
 
+    def test_invite_existing_member(self):
+        # inviter is the admin
+        client, user = api_client()
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='creator',
+            member=user,
+            access_level='admin'
+        )
+        # invited is in the room
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='creator',
+            member=self.test_user,
+            access_level='user'
+        )
+        # invite
+        response = client.post(f'/room/{self.test_room.id}/invite/{self.test_user.username}/',
+                               {'room': self.test_room, 'inviter': user, 'invited': self.test_user})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        
+        '''
+    def test_invite_people_limit(self):
+        # 1
+        client, user = api_client()
+        v = RoomMember.objects.create(
+            room=self.small_room,
+            nickname='creator',
+            member=user,
+            access_level='admin'
+        )
+        print('first', v.nickname)
+        # invite a 3rd user
+        for i in RoomMember.objects.filter(id=self.small_room.id):
+            print(i.nickname)
+        response = client.post(f'/room/{self.small_room.id}/invite/{self.test_user1.username}/',
+                               {'room': self.small_room, 'inviter': user, 'invited': self.test_user1})
+        print('invited on the list: ', RoomInviting.objects.get(room=self.small_room).invited)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+'''
+class BlockTest(TestCase):
+    def setUp(self):
+        self.test_room = Room.objects.create(
+            title='test_room',
+            people_limit=10
+        )
+        self.test_user = CustomUser.objects.create_user(
+            email='test_user@test.com',
+            password='test_user'
+        )
+        self.blocked = CustomUser.objects.create_user(
+            email='blocked@test.com',
+            password='blocked'
+        )
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='mod',
+            member=self.test_user,
+            access_level='user'
+        )
+        RoomBlock.objects.create(
+            room = self.test_room,
+            blocked_user = self.blocked,
+            reason = "spam",
+            block_manager = self.test_user
+        )
 
+    def test_block_user(self):
+        client, user = api_client()
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='creator',
+            member=user,
+            access_level='admin'
+        )
+        response = client.post(f'/room/{self.test_room.id}/block/{self.test_user.id}/',
+                               {'room': self.test_room, 'block_manager': user, 'blocked_user': self.test_user,
+                                'reason': "spam1"})
+        block = RoomBlock.objects.get(reason='spam1')
+        serializer = RoomBlockSerializer(block)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
 
+    def test_block_again(self):
+        client, user = api_client()
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='creator',
+            member=user,
+            access_level='admin'
+        )
+        response = client.post(f'/room/{self.test_room.id}/block/{self.blocked.id}/',
+                               {'room': self.test_room, 'block_manager': user, 'blocked_user': self.blocked,
+                                'reason': "spam"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+class TransferAdminTest(TestCase):
+    def setUp(self):
+        self.test_room = Room.objects.create(
+            title='test_room',
+            people_limit=10
+        )
+        self.test_user = CustomUser.objects.create_user(
+            email='test_user@test.com',
+            password='test_user'
+        )
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='normal_user',
+            member=self.test_user,
+            access_level='user'
+        )
+    def test_transfer_admin(self):
+        client, user = api_client()
+        RoomMember.objects.create(
+            room=self.test_room,
+            nickname='creator',
+            member=user,
+            access_level='admin'
+        )
+
+        # have bugs, incomplete
+        response = client.put(f'room/{self.test_room.id}/transfer_admin/{user.id}/')
+        print(response.status_code)
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
