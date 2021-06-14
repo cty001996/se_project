@@ -454,7 +454,7 @@ class InviteUser(APIView):
             return error_response("使用者被封鎖了，無法邀請", status.HTTP_400_BAD_REQUEST)
         if RoomInviting.objects.filter(room_id=room_id, invited_id=user_id).exists():
             return error_response("使用者已被邀請", status.HTTP_400_BAD_REQUEST)
-        if len(RoomMember.objects.filter(room_id=room_id)) >= Room.objects.get(room_id=room_id).people_limit:
+        if len(RoomMember.objects.filter(room_id=room_id)) >= Room.objects.get(id=room_id).people_limit:
             return error_response("房間已經滿了，無法再邀請", status.HTTP_400_BAD_REQUEST)
 
         serializer = RoomInvitingSerializer(data=request.data)
